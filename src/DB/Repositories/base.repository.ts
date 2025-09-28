@@ -1,4 +1,4 @@
-import { FilterQuery, Model, ProjectionType, QueryOptions } from "mongoose";
+import { FilterQuery, Model, ProjectionType, QueryOptions, Types } from "mongoose";
 
 export abstract class BaseRepository<T> {
   constructor(private model: Model<T>) {}
@@ -7,8 +7,20 @@ export abstract class BaseRepository<T> {
     return await this.model.create(document);
   }
 
-  async findOneDocument(filter: FilterQuery<T>, projection?: ProjectionType<T>, options?: QueryOptions): Promise<T | null> {
+  async findOneDocument(
+    filter: FilterQuery<T>,
+    projection?: ProjectionType<T>,
+    options?: QueryOptions
+  ): Promise<T | null> {
     return await this.model.findOne(filter, projection, options);
+  }
+
+  async findDocumentById(
+    _id: Types.ObjectId,
+    projection?: ProjectionType<T>,
+    options?: QueryOptions
+  ): Promise<T | null> {
+    return await this.model.findById(_id, projection, options);
   }
 
   async upadeOneDocument(filter: FilterQuery<T>, document: Partial<T>): Promise<Object> {

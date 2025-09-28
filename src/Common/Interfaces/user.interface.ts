@@ -1,5 +1,7 @@
 import mongoose, { Document } from "mongoose";
 import { genderEnum, roleEnum } from "../Enums/user.enum";
+import { Request } from "express";
+import { JwtPayload } from "jsonwebtoken";
 
 export interface IUser extends Document {
   userName: string;
@@ -31,4 +33,13 @@ export interface IUserOTPS {
   confirm?: string;
   recovery?: string;
   expiration: Date;
+}
+
+export interface IRequest extends Request {
+  loggedInUser: { userData: IUser; token: JwtPayload };
+}
+
+export interface IBlackListedTokens extends Document {
+  accsessTokenId: string;
+  expirationDate: Date;
 }

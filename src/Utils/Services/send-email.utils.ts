@@ -1,6 +1,6 @@
 import nodeMailer from "nodemailer";
 import { EventEmitter } from "node:events";
-import { IEmailArguments } from "../Common";
+import { IEmailArguments } from "../../Common";
 
 export const emitter = new EventEmitter();
 
