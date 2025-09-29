@@ -1,7 +1,14 @@
 import { Request, Response } from "express";
 import { IRequest, IUser } from "../../../Common";
-import { UserOTPsRepository, UserRepository } from "../../../DB/Repositories/index";
-import { userModel, otpModel, blackListedTokensModel } from "../../../DB/models/index";
+import {
+  UserOTPsRepository,
+  UserRepository,
+} from "../../../DB/Repositories/index";
+import {
+  userModel,
+  otpModel,
+  blackListedTokensModel,
+} from "../../../DB/models/index";
 import {
   emitter,
   encrypt,
@@ -10,6 +17,8 @@ import {
   hashingData,
   compareHashedData,
   generateToken,
+  FailedResponse,
+  SuccessResponse,
 } from "../../../Utils";
 import { customAlphabet } from "nanoid";
 import { Schema } from "mongoose";
@@ -32,14 +41,15 @@ export class AuthService {
    */
   singUp = async (req: Request, res: Response) => {
     // get data  from body
-    const { userName, email, password, gender, phoneNumber }: Partial<IUser> = req.body;
+    const { userName, email, password, gender, phoneNumber }: Partial<IUser> =
+      req.body;
 
     // check if the email exist
     const isExist = await this.userRep.findOneDocument({
       email,
     });
     if (isExist) {
-      return res.status(409).json({ msg: `User Already exist` });
+      return res.status(409).json(FailedResponse("User Already exist", 409));
     }
 
     // hash password
@@ -72,7 +82,10 @@ export class AuthService {
     });
 
     // hash the otp
-    const hasedOTP = await hashingData(OTP, parseInt(process.env.SALT_ROUNDS as string));
+    const hasedOTP = await hashingData(
+      OTP,
+      parseInt(process.env.SALT_ROUNDS as string)
+    );
 
     // send the otp to the DB
     await this.otpRep.createNewDocument({
@@ -80,10 +93,15 @@ export class AuthService {
       confirm: hasedOTP,
     });
 
-    return res.status(200).json({
-      msg: `Registered successfully, now please confirm your email`,
-      userData: newUser,
-    });
+    return res
+      .status(200)
+      .json(
+        SuccessResponse<object>(
+          "Registered successfully, now please confirm your email",
+          200,
+          { userData: newUser }
+        )
+      );
   };
 
   /**
@@ -98,22 +116,24 @@ export class AuthService {
     // get the user ID from email
     const user = await this.userRep.findOneDocument({ email });
     if (!user) {
-      return res.status(400).json({ msg: `no user found with this email` });
+      return res
+        .status(400)
+        .json(FailedResponse("no user found with this email", 400));
     }
 
     // find the otp of this user
     const userOTP = await this.otpRep.findOneDocument({ userId: user._id });
     if (!userOTP) {
-      return res.status(400).json({
-        msg: `didn't find any OTPS for this user`,
-      });
+      return res
+        .status(400)
+        .json(FailedResponse("didn't find any OTPS for this user", 400));
     }
 
     // check if the otp is correct
     const correctOTP: string = userOTP.confirm as string;
     const isCorrect = await compareHashedData(OTP, correctOTP);
     if (!isCorrect) {
-      return res.status(400).json({ msg: `wrong OTP` });
+      return res.status(400).json(FailedResponse("wrong OTP", 400));
     }
 
     // update the user and make it verified
@@ -131,9 +151,11 @@ export class AuthService {
       content: WELCOME_EMAIL(user.userName),
     });
 
-    return res.status(200).json({
-      msg: `email has been confirmed, Now you can login`,
-    });
+    return res
+      .status(200)
+      .json(
+        SuccessResponse("email has been confirmed, Now you can login", 200)
+      );
   };
 
   /**
@@ -150,13 +172,17 @@ export class AuthService {
       email,
     });
     if (!user || !user?.isVerified) {
-      return res.status(409).json({ msg: `invalid email/password` });
+      return res
+        .status(409)
+        .json(FailedResponse("invalid email/password", 409));
     }
 
     // check if the pasword is correct
     const isPasswordCorrect = await compareHashedData(password, user.password);
     if (!isPasswordCorrect) {
-      return res.status(409).json({ msg: `invalid email/password` });
+      return res
+        .status(409)
+        .json(FailedResponse("invalid email/password", 409));
     }
 
     // generate token
@@ -168,14 +194,25 @@ export class AuthService {
       },
       process.env.JWT_ACCESS_KEY as Secret,
       {
-        expiresIn: process.env.JWT_ACCESS_EXPIRES_IN as SignOptions["expiresIn"],
+        expiresIn: process.env
+          .JWT_ACCESS_EXPIRES_IN as SignOptions["expiresIn"],
         jwtid: accessTokenID,
       }
     );
 
-    res.status(200).json({ msg: `logged In successfully`, accessToken });
+    return res
+      .status(200)
+      .json(
+        SuccessResponse<object>("logged In successfully", 200, { accessToken })
+      );
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {POST} /api/auth/logout
+   * @description Logout the user
+   */
   logOut = async (req: Request, res: Response) => {
     const { token } = (req as IRequest).loggedInUser;
 
@@ -185,7 +222,9 @@ export class AuthService {
       expirationDate: new Date((token.exp as number) * 1000),
     });
 
-    res.status(200).json({ msg: `logged Out successfully` });
+    return res
+      .status(200)
+      .json(SuccessResponse("logged Out successfully", 200));
   };
 }
 
