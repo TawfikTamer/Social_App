@@ -10,7 +10,7 @@ enum roleEnum {
 
 enum providerEnum {
   LOCAL = "local",
-  GOOGLE = " google",
+  GOOGLE = "google",
 }
 
 export { genderEnum, roleEnum, providerEnum };

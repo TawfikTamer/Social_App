@@ -13,13 +13,11 @@ const userSchema = new mongoose.Schema<IUser>({
   },
   password: {
     type: String,
-    required: true,
     minlength: [3, "Password must be at least 3 char"],
   },
   gender: {
     type: String,
     enum: genderEnum,
-    required: true,
   },
   role: {
     type: String,
@@ -34,11 +32,12 @@ const userSchema = new mongoose.Schema<IUser>({
     type: Boolean,
     default: false,
   },
-  provider: {
-    type: String,
-    enum: providerEnum,
-    default: providerEnum.LOCAL,
-  },
+  provider: [
+    {
+      type: String,
+      enum: Object.values(providerEnum),
+    },
+  ],
   isPublic: {
     type: Boolean,
     default: true,
@@ -48,6 +47,7 @@ const userSchema = new mongoose.Schema<IUser>({
   profilePicture: String,
   coverPicture: String,
   googleId: String,
+  needToCompleteData: Boolean,
 });
 
 export const userModel = mongoose.model<IUser>("users", userSchema);

@@ -2,13 +2,27 @@ import "dotenv/config";
 import express, { Response, Request, NextFunction } from "express";
 import { dbConnection } from "./DB/db.connection";
 import { authRouter } from "./Modules/Users/Controllers/auth.controller";
-import { HttpException } from "./Utils";
+import { FailedResponse, HttpException } from "./Utils";
+import cors from "cors";
 
 const app = express();
 
 dbConnection();
 
+// Handle CORS
+const whitelist = process.env.WHITELIST;
+const corsOptions = {
+  origin: function (origin: any, callback: any) {
+    if (whitelist?.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+};
+
 app.use(express.json());
+app.use(cors(corsOptions));
 
 app.use("/api/user", authRouter);
 
@@ -27,9 +41,9 @@ app.use(
     if (err instanceof HttpException) {
       return res
         .status(err.statusCode)
-        .json({ errorMessage: err.message, error: err.error });
+        .json(FailedResponse(err.message, err.statusCode, err.error));
     }
-    res.status(500).json({ msg: `Somthing Went wrong`, error: err?.message });
+    res.status(500).json(FailedResponse("Somthing Went Wrong", 500, err));
   }
 );
 

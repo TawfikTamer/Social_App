@@ -6,18 +6,19 @@ import { JwtPayload } from "jsonwebtoken";
 export interface IUser extends Document {
   userName: string;
   email: string;
-  password: string;
+  password?: string;
   gender: genderEnum;
   role?: roleEnum;
   isDeactivated?: boolean;
   isVerified?: boolean;
   isPublic?: boolean;
-  provider?: string;
+  provider?: string[];
   phoneNumber?: string;
   DOB?: Date;
   profilePicture?: string;
   coverPicture?: string;
   googleId?: string;
+  needToCompleteData?: boolean;
 }
 
 export interface IEmailArguments {
@@ -30,16 +31,21 @@ export interface IEmailArguments {
 
 export interface IUserOTPS {
   userId: mongoose.Schema.Types.ObjectId;
-  confirm?: string;
+  confirm?: string | null;
   recovery?: string;
   expiration: Date;
 }
 
 export interface IRequest extends Request {
-  loggedInUser: { userData: IUser; token: JwtPayload };
+  loggedInUser: {
+    userData?: IUser;
+    accessTokenData?: JwtPayload;
+    refreshTokenData?: JwtPayload;
+  };
 }
 
 export interface IBlackListedTokens extends Document {
   accsessTokenId: string;
+  refreshTokenId: string;
   expirationDate: Date;
 }

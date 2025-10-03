@@ -7,6 +7,11 @@ const blackListTokenSchema = new mongoose.Schema<IBlackListedTokens>({
     required: true,
     index: { name: "idx_accsessToken" },
   },
+  refreshTokenId: {
+    type: String,
+    required: true,
+    index: { name: "idx_accsessToken" },
+  },
   expirationDate: {
     type: Date,
     required: true,
