@@ -22,6 +22,8 @@ import {
   NotFoundException,
   BadRequestException,
   UnauthorizedException,
+  PASSWORD_RESET_REQUEST,
+  PASSWORD_CHANGED,
 } from "../../../Utils";
 import { customAlphabet } from "nanoid";
 import { Schema } from "mongoose";
@@ -117,6 +119,9 @@ export class AuthService {
     await this.otpRep.createNewDocument({
       userId: newUser._id as Schema.Types.ObjectId,
       confirm: hasedOTP,
+      expiration: new Date(
+        Date.now() + parseInt(process.env.OTPS_EXPIRES_IN_MIN!) * 60 * 1000
+      ),
     });
 
     return res
@@ -149,8 +154,8 @@ export class AuthService {
 
     // find the otp of this user
     const userOTP = await this.otpRep.findOneDocument({ userId: user._id });
-    if (!userOTP) {
-      throw new NotFoundException("didn't find any OTPS for this user");
+    if (!userOTP || userOTP.expiration < new Date()) {
+      throw new BadRequestException("otp Expired, try to register again");
     }
 
     // check if the otp is correct
@@ -391,6 +396,122 @@ export class AuthService {
     return res
       .status(200)
       .json(SuccessResponse("token has been refreshed", 200, { accessToken }));
+  };
+
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {POST} /api/auth/forget-Password
+   * @description Send password recovery OTP to user email
+   */
+  forgetPassword = async (req: Request, res: Response) => {
+    // get the email
+    const { email } = req.body;
+
+    //check for the email in db
+    const user = await this.userRep.findOneDocument({ email });
+    if (!user) {
+      throw new NotFoundException("no user with this data");
+    }
+
+    // create recovery token
+    const recoveryToken = generateToken(
+      {
+        _id: user._id,
+        email,
+      },
+      process.env.JWT_ACCESS_KEY as Secret,
+      {
+        expiresIn: process.env
+          .JWT_ACCESS_EXPIRES_IN as SignOptions["expiresIn"],
+        jwtid: uuidV4(),
+      }
+    );
+
+    // create OTP
+    const nanoid = customAlphabet("1234567890", 6);
+    const recoveryOTP: string = nanoid();
+
+    // send email with the otp
+    emitter.emit("sendEmail", {
+      to: email,
+      subject: `password recover`,
+      content: PASSWORD_RESET_REQUEST(recoveryOTP),
+    });
+
+    // hash the otp
+    const hasedOTP = await hashingData(
+      recoveryOTP,
+      parseInt(process.env.SALT_ROUNDS as string)
+    );
+
+    // send the otp to the DB
+    await this.otpRep.FindAndUpdateOrCreate(
+      { userId: user._id as Schema.Types.ObjectId },
+      {
+        recovery: hasedOTP,
+        expiration: new Date(
+          Date.now() + parseInt(process.env.OTPS_EXPIRES_IN_MIN!) * 60 * 1000
+        ),
+      }
+    );
+
+    return res.status(200).json(
+      SuccessResponse<object>("please check your email", 200, {
+        recoveryToken,
+      })
+    );
+  };
+
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {PATCH} /api/auth/Reset-Password
+   * @description Reset user password using OTP
+   */
+  resetPassword = async (req: Request, res: Response) => {
+    // get the otp , new password
+    const { otp, newPassword } = req.body;
+    const { userData } = (req as IRequest).loggedInUser;
+
+    // get the Right otp from db
+    const userOTP = await this.otpRep.findOneDocument({
+      userId: userData?._id,
+    });
+
+    if (!userOTP?.recovery || userOTP.expiration < new Date()) {
+      throw new BadRequestException("otp Expired, send it again");
+    }
+
+    // compaire the OTPs together
+    const otpIsMatched = await compareHashedData(
+      otp.toString(),
+      userOTP.recovery
+    );
+    if (!otpIsMatched) {
+      throw new BadRequestException("wrong OTP");
+    }
+
+    // if it is correct , hash the new password
+    const hashedPassword = await hashingData(
+      newPassword,
+      parseInt(process.env.SALT_ROUNDS as string)
+    );
+
+    // update the password and desconnect all the devices
+    userData!.password = hashedPassword;
+    userData!.save();
+
+    // send an email to inform the user about
+    emitter.emit("sendEmail", {
+      to: userData!.email,
+      subject: `password Changed`,
+      content: PASSWORD_CHANGED(),
+    });
+
+    res
+      .status(200)
+      .json({ msg: `Password has been changed, Now try to login` });
   };
 }
 

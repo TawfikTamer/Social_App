@@ -11,6 +11,12 @@ authRouter.post("/auth/SignUp", AuthService.singUp);
 authRouter.post("/auth/auth-gmail", AuthService.gmailAuth);
 authRouter.patch("/auth/Confirm", AuthService.confirmEmail);
 authRouter.post("/auth/login", AuthService.logIn);
+authRouter.post("/auth/forget-password", AuthService.forgetPassword);
+authRouter.patch(
+  "/auth/reset-password",
+  authenticationMiddleware,
+  AuthService.resetPassword
+);
 authRouter.post(
   "/auth/logout",
   authenticationMiddleware,

@@ -37,12 +37,12 @@ app.use(
     res: Response,
     _next: NextFunction
   ) => {
-    console.log(err);
     if (err instanceof HttpException) {
       return res
         .status(err.statusCode)
         .json(FailedResponse(err.message, err.statusCode, err.error));
     }
+    console.log(err);
     res.status(500).json(FailedResponse("Somthing Went Wrong", 500, err));
   }
 );
