@@ -14,7 +14,7 @@ export interface IUser extends Document {
   isPublic?: boolean;
   provider?: string[];
   phoneNumber?: string;
-  DOB?: Date;
+  DOB?: string;
   profilePicture?: string;
   coverPicture?: string;
   googleId?: string;

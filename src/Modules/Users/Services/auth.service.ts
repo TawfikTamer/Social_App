@@ -1,5 +1,15 @@
 import { Request, Response } from "express";
-import { genderEnum, IRequest, IUser, providerEnum } from "../../../Common";
+import {
+  ConfirmEmailBodyType,
+  ForgetPasswordBodyType,
+  genderEnum,
+  IRequest,
+  IUser,
+  LogInBodyType,
+  providerEnum,
+  ResetPasswordBodyType,
+  SignUpBodyType,
+} from "../../../Common";
 import {
   UserOTPsRepository,
   UserRepository,
@@ -47,8 +57,20 @@ export class AuthService {
    */
   singUp = async (req: Request, res: Response) => {
     // get data  from body
-    const { userName, email, password, gender, phoneNumber }: Partial<IUser> =
-      req.body;
+    const {
+      userName,
+      email,
+      password,
+      confirmPassword,
+      gender,
+      phoneNumber,
+      DOB,
+    }: SignUpBodyType = req.body;
+
+    // check if password and confirmPassword match
+    if (password !== confirmPassword) {
+      throw new BadRequestException("Passwords do not match");
+    }
 
     // check if the email exist
     const isExist = await this.userRep.findOneDocument({
@@ -104,6 +126,7 @@ export class AuthService {
       email,
       password: hasedPassword,
       gender,
+      DOB,
       phoneNumber: encryptedPhoneNumber,
       provider: [providerEnum.LOCAL],
       needToCompleteData: false,
@@ -142,7 +165,7 @@ export class AuthService {
    * @description Confirm user email with OTP
    */
   confirmEmail = async (req: Request, res: Response) => {
-    const { OTP, email } = req.body;
+    const { OTP, email }: ConfirmEmailBodyType = req.body;
 
     // get the user ID from email
     const user = await this.userRep.findOneDocument({ email });
@@ -287,7 +310,7 @@ export class AuthService {
    * @description Login user with email and password
    */
   logIn = async (req: Request, res: Response) => {
-    const { email, password } = req.body;
+    const { email, password }: LogInBodyType = req.body;
 
     // check if the email exist and verified
     const user = await this.userRep.findOneDocument({
@@ -406,7 +429,7 @@ export class AuthService {
    */
   forgetPassword = async (req: Request, res: Response) => {
     // get the email
-    const { email } = req.body;
+    const { email }: ForgetPasswordBodyType = req.body;
 
     //check for the email in db
     const user = await this.userRep.findOneDocument({ email });
@@ -471,7 +494,8 @@ export class AuthService {
    */
   resetPassword = async (req: Request, res: Response) => {
     // get the otp , new password
-    const { otp, newPassword } = req.body;
+    const { otp, newPassword, confirmNewPassword }: ResetPasswordBodyType =
+      req.body;
     const { userData } = (req as IRequest).loggedInUser;
 
     // get the Right otp from db
@@ -490,6 +514,11 @@ export class AuthService {
     );
     if (!otpIsMatched) {
       throw new BadRequestException("wrong OTP");
+    }
+
+    // check if password and confirmPassword match
+    if (newPassword !== confirmNewPassword) {
+      throw new BadRequestException("Passwords do not match");
     }
 
     // if it is correct , hash the new password

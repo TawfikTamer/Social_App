@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema<IUser>({
     default: true,
   },
   phoneNumber: String,
-  DOB: Date,
+  DOB: String,
   profilePicture: String,
   coverPicture: String,
   googleId: String,
