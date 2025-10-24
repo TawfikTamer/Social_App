@@ -12,7 +12,7 @@
     "strict": true,
     "noImplicitAny": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedParameters": false,
     "noImplicitReturns": false,
     "allowUnreachableCode": false
   }

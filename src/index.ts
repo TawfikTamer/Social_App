@@ -4,6 +4,7 @@ import { dbConnection } from "./DB/db.connection";
 import { authRouter } from "./Modules/Users/Controllers/auth.controller";
 import { FailedResponse, HttpException } from "./Utils";
 import cors from "cors";
+import { userRouter } from "./Modules/Users/Controllers/user.controller";
 
 const app = express();
 
@@ -24,7 +25,7 @@ const corsOptions = {
 app.use(express.json());
 app.use(cors(corsOptions));
 
-app.use("/api/user", authRouter);
+app.use("/api/user", authRouter, userRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ msg: "Route not found" });
