@@ -36,7 +36,7 @@ import {
   PASSWORD_CHANGED,
 } from "../../../Utils";
 import { customAlphabet } from "nanoid";
-import { Schema } from "mongoose";
+import {  Types } from "mongoose";
 import { Secret, SignOptions } from "jsonwebtoken";
 import { v4 as uuidV4 } from "uuid";
 import { BlackListedTokenRepository } from "../../../DB/Repositories/black-listed-tokens.repository";
@@ -140,7 +140,7 @@ export class AuthService {
 
     // send the otp to the DB
     await this.otpRep.createNewDocument({
-      userId: newUser._id as Schema.Types.ObjectId,
+      userId: newUser._id as Types.ObjectId,
       confirm: hasedOTP,
       expiration: new Date(
         Date.now() + parseInt(process.env.OTPS_EXPIRES_IN_MIN!) * 60 * 1000
@@ -470,7 +470,7 @@ export class AuthService {
 
     // send the otp to the DB
     await this.otpRep.FindAndUpdateOrCreate(
-      { userId: user._id as Schema.Types.ObjectId },
+      { userId: user._id as Types.ObjectId },
       {
         recovery: hasedOTP,
         expiration: new Date(
@@ -542,6 +542,8 @@ export class AuthService {
       .status(200)
       .json({ msg: `Password has been changed, Now try to login` });
   };
+
+  // 2 step V
 }
 
 export default new AuthService();

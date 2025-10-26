@@ -1,9 +1,10 @@
-import mongoose, { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 import { genderEnum, roleEnum } from "../Enums/user.enum";
 import { Request } from "express";
 import { JwtPayload } from "jsonwebtoken";
 
-export interface IUser extends Document {
+export interface IUser extends Document<Types.ObjectId> {
+  _id: Types.ObjectId;
   userName: string;
   email: string;
   password?: string;
@@ -30,7 +31,7 @@ export interface IEmailArguments {
 }
 
 export interface IUserOTPS {
-  userId: mongoose.Schema.Types.ObjectId;
+  userId: Types.ObjectId;
   confirm?: string | null;
   recovery?: string;
   expiration: Date;

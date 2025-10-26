@@ -50,4 +50,12 @@ export abstract class BaseRepository<T> {
   ) {
     return await this.model.findOneAndUpdate(filter, document, options);
   }
+
+  async findDocuments(
+    filter: FilterQuery<T>,
+    projection?: ProjectionType<T>,
+    options?: QueryOptions
+  ): Promise<T | never[]> {
+    return await this.model.find(filter, projection, options);
+  }
 }

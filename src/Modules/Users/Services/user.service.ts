@@ -6,10 +6,15 @@ import {
   S3ClientService,
   SuccessResponse,
 } from "../../../Utils";
-import { IRequest } from "../../../Common";
+import { friendShipStatusEnum, IRequest, IUser } from "../../../Common";
+import { FilterQuery, Types } from "mongoose";
+import { FriendShipRepository } from "../../../DB/Repositories/friendship.repository";
+import { IFriendShip } from "../../../Common/Interfaces/friendShip.interface";
 
 class UserService {
   userRep: UserRepository = new UserRepository(userModel);
+  friendShipReop: FriendShipRepository = new FriendShipRepository();
+
   s3 = new S3ClientService();
 
   uploadProfilePic = async (req: Request, res: Response) => {
@@ -89,7 +94,130 @@ class UserService {
       .json(SuccessResponse("url has been renewed", 200, { url, key }));
   };
 
+  // --------------------------- frind ship APIS --------------------------------
+  sendFriendRequest = async (req: Request, res: Response) => {
+    const {
+      userData: { _id },
+    } = (req as IRequest).loggedInUser as { userData: IUser };
+    const { receiverId } = req.params;
+
+    // check if the receiver is exist
+    if (!receiverId) throw new BadRequestException("insert reciver Id");
+    const isExist = await this.userRep.findDocumentById(
+      receiverId as unknown as Types.ObjectId
+    );
+    if (!isExist) throw new BadRequestException("this user is not exist");
+
+    // check if the sender and receiver ID are the same
+    if ((receiverId as unknown as Types.ObjectId) == _id)
+      throw new BadRequestException("can't send request to yourself");
+
+    // check if the request has not been send already
+    const isSendBefore = await this.friendShipReop.findOneDocument({
+      $or: [
+        { receiverId: receiverId as unknown as Types.ObjectId },
+        { senderId: receiverId as unknown as Types.ObjectId },
+      ],
+    });
+
+    if (isSendBefore) {
+      // if the request is rejected , send it again
+      if (isSendBefore.status == friendShipStatusEnum.REJECTED) {
+        isSendBefore.status = friendShipStatusEnum.PENDING;
+        await isSendBefore.save();
+        return res
+          .status(200)
+          .json(SuccessResponse("request resend successfully", 200));
+      } else if (isSendBefore.status == friendShipStatusEnum.ACCEPTED) {
+        return res
+          .status(200)
+          .json(SuccessResponse("you are already friends", 200));
+      }
+    } else {
+      // creat new request
+      await this.friendShipReop.createNewDocument({
+        senderId: _id,
+        receiverId: receiverId as unknown as Types.ObjectId,
+      });
+    }
+
+    res.status(200).json(SuccessResponse("request send successfully", 200));
+  };
+
+  listFriendRequests = async (req: Request, res: Response) => {
+    const {
+      userData: { _id },
+    } = (req as IRequest).loggedInUser as { userData: IUser };
+    const { status } = req.query;
+
+    // check for the status
+    const filter: FilterQuery<IFriendShip> = {
+      status: status ? status : friendShipStatusEnum.PENDING,
+    };
+
+    if (filter.status == friendShipStatusEnum.ACCEPTED) {
+      // show the user's friends
+      filter.$or = [{ receiverId: _id }, { senderId: _id }];
+    } else {
+      // show the pending and rejected requests that the user has
+      filter.receiverId = _id;
+    }
+
+    // get the list from DB
+    const list = await this.friendShipReop.findDocuments(
+      filter,
+      {},
+      {
+        populate: [
+          {
+            path: "senderId",
+            select: "userName ",
+          },
+          {
+            path: "receiverId",
+            select: "userName ",
+          },
+        ],
+      }
+    );
+
+    res
+      .status(200)
+      .json(SuccessResponse("here is the your friendship list", 200, list));
+  };
+
+  responseToFriendRequest = async (req: Request, res: Response) => {
+    const {
+      userData: { _id },
+    } = (req as IRequest).loggedInUser as { userData: IUser };
+    const { response, senderId } = req.body as {
+      response: friendShipStatusEnum;
+      senderId: Types.ObjectId;
+    };
+
+    const request = await this.friendShipReop.findOneDocument({
+      senderId,
+      receiverId: _id,
+      status: friendShipStatusEnum.PENDING,
+    });
+
+    if (!request) throw new BadRequestException("this request if not valid");
+
+    request.status = response;
+    await request.save();
+
+    res.status(200).json(SuccessResponse(`request has been ${response}`, 200));
+  };
+
+  // cancel request
+  // delete rejected requests
+  // remove friends
+  // block users
+  // unblock users
+
+  // ----------------------------------------------------------------------------
   updateProfileData = async (req: Request, res: Response) => {};
+  updateEmail = async (req: Request, res: Response) => {};
   updatePassword = async (req: Request, res: Response) => {};
   deleteAccount = async (req: Request, res: Response) => {};
   activateAccount = async (req: Request, res: Response) => {};

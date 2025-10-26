@@ -29,5 +29,20 @@ userRouter.delete(
   authenticationMiddleware,
   UserService.deleteAccount
 );
+userRouter.post(
+  "/profile/send-friend-request/:receiverId",
+  authenticationMiddleware,
+  UserService.sendFriendRequest
+);
+userRouter.get(
+  "/profile/list-friends",
+  authenticationMiddleware,
+  UserService.listFriendRequests
+);
+userRouter.patch(
+  "/profile/response-to-friendrequest",
+  authenticationMiddleware,
+  UserService.responseToFriendRequest
+);
 
 export { userRouter };
