@@ -43,11 +43,12 @@ export abstract class BaseRepository<T> {
 
   async FindAndUpdateOrCreate(
     filter: FilterQuery<T>,
-    document: Partial<T>,
+    document?: Partial<T>,
     options: QueryOptions = {
       upsert: true,
     }
   ) {
+    if (!document) document = filter;
     return await this.model.findOneAndUpdate(filter, document, options);
   }
 

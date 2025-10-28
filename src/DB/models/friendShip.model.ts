@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { friendShipStatusEnum } from "../../Common";
-import { IFriendShip } from "../../Common/Interfaces/friendShip.interface";
+import { IFriendShip } from "../../Common";
 
 const friendShipSchema = new mongoose.Schema<IFriendShip>({
   senderId: {

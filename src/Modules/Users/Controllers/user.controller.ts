@@ -40,9 +40,40 @@ userRouter.get(
   UserService.listFriendRequests
 );
 userRouter.patch(
-  "/profile/response-to-friendrequest",
+  "/profile/response-to-friendrequest/:senderId",
   authenticationMiddleware,
   UserService.responseToFriendRequest
+);
+
+userRouter.delete(
+  "/profile/cancel-friendrequest/:receiverId",
+  authenticationMiddleware,
+  UserService.cancelFriendRequest
+);
+userRouter.delete(
+  "/profile/delete-rejected/:receiverId",
+  authenticationMiddleware,
+  UserService.deleteRejectedRequest
+);
+userRouter.delete(
+  "/profile/remove-friend/:friendId",
+  authenticationMiddleware,
+  UserService.removeFriend
+);
+userRouter.post(
+  "/profile/block-user/:blockedUserId",
+  authenticationMiddleware,
+  UserService.blockUser
+);
+userRouter.delete(
+  "/profile/unblock-user/:blockedUserId",
+  authenticationMiddleware,
+  UserService.unBlockUser
+);
+userRouter.get(
+  "/profile/list-block-users",
+  authenticationMiddleware,
+  UserService.listBlockedUsers
 );
 
 export { userRouter };
