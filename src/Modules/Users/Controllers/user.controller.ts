@@ -34,6 +34,11 @@ userRouter.post(
   authenticationMiddleware,
   UserService.sendFriendRequest
 );
+userRouter.post(
+  "/profile/create-group",
+  authenticationMiddleware,
+  UserService.createGroup
+);
 userRouter.get(
   "/profile/list-friends",
   authenticationMiddleware,

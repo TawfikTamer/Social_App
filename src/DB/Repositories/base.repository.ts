@@ -56,7 +56,7 @@ export abstract class BaseRepository<T> {
     filter: FilterQuery<T>,
     projection?: ProjectionType<T>,
     options?: QueryOptions
-  ): Promise<T | never[]> {
+  ): Promise<T | never[] | T[]> {
     return await this.model.find(filter, projection, options);
   }
 }

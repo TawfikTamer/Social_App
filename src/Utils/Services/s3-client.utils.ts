@@ -61,7 +61,6 @@ export class S3ClientService {
       Bucket: process.env.BUCKET_NAME,
       Key: key_name,
     });
-    console.log(deleteCommand);
 
     return await this.s3Client.send(deleteCommand);
   }

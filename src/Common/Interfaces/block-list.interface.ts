@@ -1,6 +1,6 @@
-import { Types } from "mongoose";
+import { Document, Types } from "mongoose";
 
-export interface IBlockList {
+export interface IBlockList extends Document {
   userID: Types.ObjectId;
   theBlockedUser: Types.ObjectId;
 }

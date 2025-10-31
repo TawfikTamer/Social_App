@@ -36,7 +36,7 @@ import {
   PASSWORD_CHANGED,
 } from "../../../Utils";
 import { customAlphabet } from "nanoid";
-import {  Types } from "mongoose";
+import { Types } from "mongoose";
 import { Secret, SignOptions } from "jsonwebtoken";
 import { v4 as uuidV4 } from "uuid";
 import { BlackListedTokenRepository } from "../../../DB/Repositories/black-listed-tokens.repository";
@@ -339,6 +339,7 @@ export class AuthService {
         _id: user._id,
         email,
         refreshTokenId,
+        userName: user.userName,
       },
       process.env.JWT_ACCESS_KEY as Secret,
       {
@@ -353,6 +354,7 @@ export class AuthService {
       {
         _id: user._id,
         email,
+        userName: user.userName,
       },
       process.env.JWT_REFRESH_KEY as Secret,
       {

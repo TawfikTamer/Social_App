@@ -1,13 +1,22 @@
 import { Request, Response } from "express";
 import { userModel } from "../../../DB/models";
-import { BlockListRepository, UserRepository } from "../../../DB/Repositories";
+import {
+  BlockListRepository,
+  conversionsRepository,
+  UserRepository,
+} from "../../../DB/Repositories";
 import {
   BadRequestException,
   isBlockingEachOther,
   S3ClientService,
   SuccessResponse,
 } from "../../../Utils";
-import { friendShipStatusEnum, IRequest, IUser } from "../../../Common";
+import {
+  conversionTypeEnum,
+  friendShipStatusEnum,
+  IRequest,
+  IUser,
+} from "../../../Common";
 import { DeleteResult, FilterQuery, Types } from "mongoose";
 import { FriendShipRepository } from "../../../DB/Repositories/friendship.repository";
 import { IFriendShip } from "../../../Common/Interfaces/friendShip.interface";
@@ -16,6 +25,7 @@ class UserService {
   userRep: UserRepository = new UserRepository(userModel);
   friendShipReop: FriendShipRepository = new FriendShipRepository();
   blockListRepo: BlockListRepository = new BlockListRepository();
+  conversionsRepo: conversionsRepository = new conversionsRepository();
 
   s3 = new S3ClientService();
 
@@ -187,9 +197,18 @@ class UserService {
       }
     );
 
+    const groups = await this.conversionsRepo.findDocuments({
+      members: { $in: [_id] },
+      type: conversionTypeEnum.GROUP,
+    });
     res
       .status(200)
-      .json(SuccessResponse("here is the your friendship list", 200, list));
+      .json(
+        SuccessResponse("here is the your friendship list", 200, {
+          list,
+          groups,
+        })
+      );
   };
 
   responseToFriendRequest = async (req: Request, res: Response) => {
@@ -362,6 +381,42 @@ class UserService {
       throw new BadRequestException("you can't unblock this user");
 
     res.status(200).json(SuccessResponse("user has been unblocked", 200));
+  };
+
+  createGroup = async (req: Request, res: Response) => {
+    const {
+      userData: { _id },
+    } = (req as IRequest).loggedInUser as { userData: IUser };
+    const { name, members } = req.body;
+
+    // check for the members in DB
+    const membersExist = await this.userRep.findDocuments({
+      _id: {
+        $in: members,
+      },
+    });
+    if (members.length != (membersExist as string[]).length)
+      throw new BadRequestException("members not found");
+
+    // check if the users are friends
+    const isFriends = await this.friendShipReop.findDocuments({
+      $or: [
+        { senderId: _id, receiverId: { $in: members } },
+        { receiverId: _id, senderId: { $in: members } },
+      ],
+      status: friendShipStatusEnum.ACCEPTED,
+    });
+
+    if (members.length != (isFriends as string[]).length)
+      throw new BadRequestException("members are not friends");
+
+    const group = await this.conversionsRepo.createNewDocument({
+      type: conversionTypeEnum.GROUP,
+      name,
+      members: [...members, _id],
+    });
+
+    res.status(201).json(SuccessResponse("group created", 201, group));
   };
   // ----------------------------------------------------------------------------
   updateProfileData = async (req: Request, res: Response) => {};
