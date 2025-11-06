@@ -5,6 +5,7 @@ import {
   authRouter,
   userRouter,
   postRouter,
+  commentRouter,
 } from "./Modules/controllers.index";
 import { FailedResponse, HttpException } from "./Utils";
 import cors from "cors";
@@ -32,6 +33,7 @@ app.use(express.json());
 
 app.use("/api/user", authRouter, userRouter);
 app.use("/api/post", postRouter);
+app.use("/api/comment", commentRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ msg: "Route not found" });

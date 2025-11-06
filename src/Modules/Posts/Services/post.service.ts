@@ -353,6 +353,45 @@ class PostService {
       .status(200)
       .json(SuccessResponse("Posts fetched successfully", 200, posts));
   };
+
+  // get post by id
+  getPost = async (req: Request, res: Response) => {
+    // get logged in user
+    const {
+      userData: { _id },
+    } = (req as IRequest).loggedInUser as { userData: IUser };
+    const { postId } = req.params;
+
+    // check if the post exist
+    const post = await this.postRepo.findDocumentById(
+      postId as unknown as Types.ObjectId
+    );
+    if (!post) throw new BadRequestException("this post is not exist");
+
+    // check if the post is private
+    if (post.visibility == postVisibilityEnum.ONLY_ME) {
+      if (!post.ownerId.equals(_id))
+        throw new BadRequestException("this post is private");
+    }
+
+    // check if the post is for friends only
+    if (post.visibility == postVisibilityEnum.FRIENDS) {
+      // check if the user is a friend
+      const isFriends = await this.friendShipReop.findOneDocument({
+        $or: [
+          { senderId: _id, receiverId: post.ownerId },
+          { senderId: post.ownerId, receiverId: _id },
+        ],
+        status: friendShipStatusEnum.ACCEPTED,
+      });
+      if (!isFriends)
+        throw new BadRequestException("this post is for friends only");
+    }
+
+    res
+      .status(200)
+      .json(SuccessResponse("Posts fetched successfully", 200, post));
+  };
 }
 
 export default new PostService();

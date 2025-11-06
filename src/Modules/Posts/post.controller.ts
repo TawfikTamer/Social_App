@@ -35,4 +35,11 @@ postRouter.patch(
 // Get posts
 postRouter.get("/list-posts", authenticationMiddleware, postService.listPosts);
 
+// Get post by Id
+postRouter.get(
+  "/get-post/:postId",
+  authenticationMiddleware,
+  postService.getPost
+);
+
 export { postRouter };
