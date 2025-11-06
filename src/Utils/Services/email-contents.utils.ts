@@ -224,3 +224,147 @@ export const PASSWORD_RESET_REQUEST = (otp: string): string => {
 </html>
 `;
 };
+
+export const CHANGE_EMAIL_VERIFICATION = (
+  otp: string,
+  newEmail: string
+): string => {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Email Change</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f7fa;">
+  <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 30px; text-align: center; border-radius: 15px 15px 0 0; box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);">
+    <div style="background: rgba(255,255,255,0.1); border-radius: 50px; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+      <span style="font-size: 40px;">✉️</span>
+    </div>
+    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 1px;">Email Change Request</h1>
+  </div>
+  
+  <div style="background-color: #ffffff; padding: 40px 30px; border-radius: 0 0 15px 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1);">
+    <p style="font-size: 18px; margin-top: 0; color: #555;">Hello! 👋</p>
+    <p style="color: #666; font-size: 16px;">We received a request to change your account email address to:</p>
+    
+    <div style="background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); padding: 15px 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+      <p style="margin: 0; color: #667eea; font-size: 16px; font-weight: 600;">${newEmail}</p>
+    </div>
+    
+    <p style="color: #666; font-size: 16px;">To confirm this change and verify your new email address, please use the verification code below:</p>
+    
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 35px 0; padding: 25px; border-radius: 12px; text-align: center; position: relative;">
+      <p style="color: white; margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.9;">Your Verification Code</p>
+      <div style="background: rgba(255,255,255,0.95); padding: 15px 25px; border-radius: 8px; margin: 0 auto; display: inline-block;">
+        <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #333; font-family: 'Courier New', monospace;">${otp}</span>
+      </div>
+    </div>
+    
+    <div style="background: linear-gradient(90deg, #fff3e0 0%, #ffe0b2 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #ff9800; margin: 25px 0;">
+      <p style="margin: 0; color: #555; font-size: 14px;">
+        <strong>⚠️ Important:</strong> This code will expire in 15 minutes. If you didn't request this change, please ignore this email and your account will remain secure.
+      </p>
+    </div>
+    
+    <p style="color: #777; font-size: 15px;">Once verified, this email address will become your new login credential and all future communications will be sent here.</p>
+    
+    <div style="margin-top: 40px; padding-top: 25px; border-top: 1px solid #eee;">
+      <p style="margin: 0; color: #555;">
+        <strong style="color: #667eea;">Best regards,</strong><br>
+        <span style="color: #764ba2; font-weight: 500;">The Security Team</span>
+      </p>
+    </div>
+  </div>
+  
+  <div style="text-align: center; margin-top: 25px; padding: 20px;">
+    <p style="color: #999; font-size: 13px; margin: 0;">
+      🤖 This is an automated message - please do not reply to this email
+    </p>
+    <div style="margin-top: 15px;">
+      <span style="color: #ccc; font-size: 12px;">Secured by SSL encryption</span>
+    </div>
+  </div>
+</body>
+</html>
+`;
+};
+
+export const EMAIL_UPDATED_NOTIFICATION = (
+  oldEmail: string,
+  updatedAt: string
+): string => {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Successfully Updated</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f7fa;">
+  <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 30px; text-align: center; border-radius: 15px 15px 0 0; box-shadow: 0 4px 15px rgba(17, 153, 142, 0.3);">
+    <div style="background: rgba(255,255,255,0.1); border-radius: 50px; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+      <span style="font-size: 40px;">✅</span>
+    </div>
+    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 1px;">Email Successfully Updated</h1>
+  </div>
+  
+  <div style="background-color: #ffffff; padding: 40px 30px; border-radius: 0 0 15px 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1);">
+    <p style="font-size: 18px; margin-top: 0; color: #555;">Hello! 👋</p>
+    <p style="color: #666; font-size: 16px;">This is to confirm that your email address has been successfully updated.</p>
+    
+    <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 25px; border-radius: 12px; margin: 30px 0;">
+      <div style="margin-bottom: 20px;">
+        <p style="margin: 0 0 8px 0; color: #666; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Previous Email</p>
+        <p style="margin: 0; color: #555; font-size: 16px; text-decoration: line-through; opacity: 0.7;">${oldEmail}</p>
+      </div>
+      
+      <div style="text-align: center; margin: 15px 0;">
+        <span style="font-size: 24px;">⬇️</span>
+      </div>
+      
+      <div>
+        <p style="margin: 0 0 8px 0; color: #666; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">New Email</p>
+        <p style="margin: 0; color: #11998e; font-size: 16px; font-weight: 600;">This email address</p>
+      </div>
+    </div>
+    
+    <div style="background: linear-gradient(90deg, #e3f2fd 0%, #e1f5fe 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #03a9f4; margin: 25px 0;">
+      <p style="margin: 0 0 10px 0; color: #555; font-size: 14px;">
+        <strong>📅 Updated on:</strong> ${updatedAt}
+      </p>
+      <p style="margin: 0; color: #555; font-size: 14px;">
+        <strong>💡 What's next:</strong> Use this new email address for all future logins and communications.
+      </p>
+    </div>
+    
+    <div style="background: linear-gradient(90deg, #fff3e0 0%, #ffe0b2 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #ff9800; margin: 25px 0;">
+      <p style="margin: 0; color: #555; font-size: 14px;">
+        <strong>⚠️ Didn't make this change?</strong> If you did not authorize this update, please contact our support team immediately to secure your account.
+      </p>
+    </div>
+    
+    <p style="color: #777; font-size: 15px;">All future notifications and communications will be sent to your new email address.</p>
+    
+    <div style="margin-top: 40px; padding-top: 25px; border-top: 1px solid #eee;">
+      <p style="margin: 0; color: #555;">
+        <strong style="color: #11998e;">Best regards,</strong><br>
+        <span style="color: #38ef7d; font-weight: 500;">The Account Security Team</span>
+      </p>
+    </div>
+  </div>
+  
+  <div style="text-align: center; margin-top: 25px; padding: 20px;">
+    <p style="color: #999; font-size: 13px; margin: 0;">
+      🤖 This is an automated message - please do not reply to this email
+    </p>
+    <div style="margin-top: 15px;">
+      <span style="color: #ccc; font-size: 12px;">Secured by SSL encryption</span>
+    </div>
+  </div>
+</body>
+</html>
+`;
+};

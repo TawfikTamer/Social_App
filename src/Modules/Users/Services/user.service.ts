@@ -1,13 +1,27 @@
 import { Request, Response } from "express";
-import { userModel } from "../../../DB/models";
 import {
+  blackListedTokensModel,
+  otpModel,
+  userModel,
+} from "../../../DB/models";
+import {
+  BlackListedTokenRepository,
   BlockListRepository,
   conversionsRepository,
+  UserOTPsRepository,
   UserRepository,
 } from "../../../DB/Repositories";
 import {
   BadRequestException,
+  CHANGE_EMAIL_VERIFICATION,
+  compareHashedData,
+  decrypt,
+  EMAIL_UPDATED_NOTIFICATION,
+  emitter,
+  encrypt,
+  hashingData,
   isBlockingEachOther,
+  PASSWORD_CHANGED,
   S3ClientService,
   SuccessResponse,
 } from "../../../Utils";
@@ -19,14 +33,18 @@ import {
 } from "../../../Common";
 import { DeleteResult, FilterQuery, Types } from "mongoose";
 import { FriendShipRepository } from "../../../DB/Repositories/friendship.repository";
-import { IFriendShip } from "../../../Common/Interfaces/friendShip.interface";
+import { IFriendShip } from "../../../Common";
+import { customAlphabet } from "nanoid";
 
 class UserService {
   userRep: UserRepository = new UserRepository(userModel);
   friendShipReop: FriendShipRepository = new FriendShipRepository();
   blockListRepo: BlockListRepository = new BlockListRepository();
   conversionsRepo: conversionsRepository = new conversionsRepository();
-
+  otpRep: UserOTPsRepository = new UserOTPsRepository(otpModel);
+  blackListedRep: BlackListedTokenRepository = new BlackListedTokenRepository(
+    blackListedTokensModel
+  );
   s3 = new S3ClientService();
 
   uploadProfilePic = async (req: Request, res: Response) => {
@@ -188,10 +206,12 @@ class UserService {
           {
             path: "senderId",
             select: "userName ",
+            match: { isDeactivated: { $ne: true } },
           },
           {
             path: "receiverId",
             select: "userName ",
+            match: { isDeactivated: { $ne: true } },
           },
         ],
       }
@@ -201,14 +221,12 @@ class UserService {
       members: { $in: [_id] },
       type: conversionTypeEnum.GROUP,
     });
-    res
-      .status(200)
-      .json(
-        SuccessResponse("here is the your friendship list", 200, {
-          list,
-          groups,
-        })
-      );
+    res.status(200).json(
+      SuccessResponse("here is the your friendship list", 200, {
+        list,
+        groups,
+      })
+    );
   };
 
   responseToFriendRequest = async (req: Request, res: Response) => {
@@ -419,13 +437,260 @@ class UserService {
     res.status(201).json(SuccessResponse("group created", 201, group));
   };
   // ----------------------------------------------------------------------------
-  updateProfileData = async (req: Request, res: Response) => {};
-  updateEmail = async (req: Request, res: Response) => {};
-  updatePassword = async (req: Request, res: Response) => {};
-  deleteAccount = async (req: Request, res: Response) => {};
-  activateAccount = async (req: Request, res: Response) => {};
-  deActivateAccount = async (req: Request, res: Response) => {};
-  getProfileData = async (req: Request, res: Response) => {};
+  updateProfileData = async (req: Request, res: Response) => {
+    // get loggedIn user
+    const { userData } = (req as IRequest).loggedInUser;
+    // get data to be updated
+    const { userName, gender, isPublic, phoneNumber, DOB } = req.body as IUser;
+
+    // encrypt phoneNumber
+    let encryptedPhoneNumber = undefined;
+    if (phoneNumber) encryptedPhoneNumber = encrypt(phoneNumber as string);
+
+    const newData = {
+      userName: userName || userData?.userName,
+      gender: gender || userData?.gender,
+      isPublic: isPublic || userData?.isPublic,
+      phoneNumber: encryptedPhoneNumber || userData?.phoneNumber,
+      DOB: DOB || userData?.DOB,
+    };
+
+    // update the user
+    this.userRep.updateOneDocument({ _id: userData?._id }, newData);
+
+    res.status(200).json(SuccessResponse("data updated succeccfully"));
+  };
+  updateEmail = async (req: Request, res: Response) => {
+    // get loggedIn user
+    const { userData } = (req as IRequest).loggedInUser;
+    // get the new email
+    const { newEmail } = req.body;
+
+    // check if the new email is exist
+    const isNewEmailExist = await this.userRep.findOneDocument({
+      _id: { $ne: userData?._id },
+      email: newEmail,
+    });
+    if (isNewEmailExist)
+      throw new BadRequestException("this email already exist");
+
+    // check if the new email is the current one
+    if (userData?.email == newEmail)
+      throw new BadRequestException("this is your current email");
+
+    // send an email to the user to confirm the new one
+    const nanoid = customAlphabet("1234567890", 6);
+    const OTP: string = nanoid();
+
+    // send email with the OTP
+    emitter.emit("sendEmail", {
+      to: newEmail,
+      subject: "Confirm New Email",
+      content: CHANGE_EMAIL_VERIFICATION(OTP, newEmail),
+    });
+
+    // hash the otp
+    const hasedOTP = await hashingData(
+      OTP,
+      parseInt(process.env.SALT_ROUNDS as string)
+    );
+
+    // send the otp to the DB
+    await this.otpRep.createNewDocument({
+      userId: userData?._id as Types.ObjectId,
+      confirm: hasedOTP,
+      expiration: new Date(
+        Date.now() + parseInt(process.env.OTPS_EXPIRES_IN_MIN!) * 60 * 1000
+      ),
+    });
+
+    res.status(200).json(SuccessResponse("please check your new email"));
+  };
+  confirmNewEmail = async (req: Request, res: Response) => {
+    // get loggedIn user
+    const { userData, accessTokenData, refreshTokenData } = (req as IRequest)
+      .loggedInUser;
+    // get the new email and the OTP
+    const { newEmail, OTP } = req.body;
+
+    // find the otp of this user
+    const userOTP = await this.otpRep.findOneDocument({
+      userId: userData?._id,
+    });
+    console.log(userData);
+
+    if (!userOTP || userOTP.expiration < new Date()) {
+      throw new BadRequestException("otp Expired, try to register again");
+    }
+
+    // check if the otp is correct
+    const correctOTP: string = userOTP.confirm as string;
+    const isCorrect = await compareHashedData(OTP, correctOTP);
+    if (!isCorrect) {
+      throw new BadRequestException("wrong OTP");
+    }
+
+    // delete the otp from DB
+    await this.otpRep.deleteOneDocument({
+      userId: userData?._id,
+    });
+
+    // send welcome email
+    emitter.emit("sendEmail", {
+      to: newEmail,
+      subject: "Welcome Email",
+      content: EMAIL_UPDATED_NOTIFICATION(
+        userData?.email as string,
+        userData?.userName as string
+      ),
+    });
+
+    // update the new email
+    if (userData) userData.email = newEmail;
+
+    // revoke the token to log out the user
+    await this.blackListedRep.createNewDocument({
+      accsessTokenId: accessTokenData?.jti,
+      refreshTokenId: refreshTokenData?.jti,
+      expirationDate: new Date((accessTokenData?.exp as number) * 1000),
+    });
+
+    userData?.save();
+    return res
+      .status(200)
+      .json(
+        SuccessResponse(
+          "email has been updated, Now you need to log in again with the new one",
+          200
+        )
+      );
+  };
+  updatePassword = async (req: Request, res: Response) => {
+    // get loggedIn user
+    const { userData } = (req as IRequest).loggedInUser;
+    // get the old and new Passwords
+    const { oldPassword, newPassword, confirmNewPassword } = req.body;
+
+    // check if the new password and the confirm one is matches
+    if (newPassword !== confirmNewPassword)
+      throw new BadRequestException("passwords don't match");
+
+    // check if the old password is the correct one
+    const isCorrect = await compareHashedData(
+      oldPassword,
+      userData?.password as string
+    );
+    if (!isCorrect) throw new BadRequestException("wrong password");
+
+    // check if the new password is the old one
+    if (oldPassword == newPassword)
+      throw new BadRequestException(
+        "can't change the password to the current one"
+      );
+
+    // has the new password and update it
+    const hasedPassword = await hashingData(
+      newPassword as string,
+      parseInt(process.env.SALT_ROUNDS as string)
+    );
+    if (userData) userData.password = hasedPassword;
+    userData?.save();
+
+    // send an email to inform the user about
+    emitter.emit("sendEmail", {
+      to: userData!.email,
+      subject: `password Changed`,
+      content: PASSWORD_CHANGED(),
+    });
+
+    res.status(200).json(SuccessResponse("password has been changed"));
+  };
+
+  getYourProfileData = async (req: Request, res: Response) => {
+    //get loggedIn user
+    const {
+      userData: { userName, email, phoneNumber, DOB, isPublic, gender },
+    } = (req as IRequest).loggedInUser as { userData: IUser };
+
+    // decrypt the phone number
+    const decryptedPhoneNumber = decrypt(phoneNumber as string);
+
+    res.status(200).json(
+      SuccessResponse("here is your data", 200, {
+        userName,
+        email,
+        phoneNumber: decryptedPhoneNumber,
+        DOB,
+        isPublic,
+        gender,
+      })
+    );
+  };
+
+  viewProfile = async (req: Request, res: Response) => {
+    const {
+      userData: { _id },
+    } = (req as IRequest).loggedInUser as { userData: IUser };
+    const { userID } = req.params;
+
+    // search for the user
+    const user = await this.userRep.findOneDocument(
+      { _id: userID },
+      "userName gender coverPicture profilePicture "
+    );
+    if (!user) throw new BadRequestException("this user not found");
+
+    // get friend state
+    const friendState = await this.friendShipReop.findOneDocument({
+      $or: [
+        { senderId: user._id, receiverId: _id },
+        { senderId: _id, receiverId: (user as IUser)._id },
+      ],
+    });
+
+    res.status(200).json(
+      SuccessResponse("here is user profile", 200, {
+        user,
+        friendState: friendState?.status || "not friends",
+      })
+    );
+  };
+
+  deActivateAccount = async (req: Request, res: Response) => {
+    //get loggedIn user
+    const { userData, accessTokenData, refreshTokenData } = (req as IRequest)
+      .loggedInUser;
+
+    // deactivate the account
+    userData!.isDeactivated = true;
+    userData?.save();
+
+    // revoke the token to log out the user
+    await this.blackListedRep.createNewDocument({
+      accsessTokenId: accessTokenData?.jti,
+      refreshTokenId: refreshTokenData?.jti,
+      expirationDate: new Date((accessTokenData?.exp as number) * 1000),
+    });
+
+    res
+      .status(200)
+      .json(
+        SuccessResponse(
+          "account now has been deactivated, login again to active it"
+        )
+      );
+  };
+
+  deleteAccount = async (req: Request, res: Response) => {
+    // delete user account from user nodel
+    // delete any otm for the user
+    // delete user's photos from s3
+    // delete user's posts
+    // delete user's comments and replyes
+    // delete user's friendShips
+    // delete user's messages
+    // delete the user from any group he joined
+  };
 }
 
 export default new UserService();

@@ -313,9 +313,15 @@ export class AuthService {
     const { email, password }: LogInBodyType = req.body;
 
     // check if the email exist and verified
-    const user = await this.userRep.findOneDocument({
-      email,
-    });
+    const user = await this.userRep.findOneDocument(
+      {
+        email,
+      },
+      {},
+      {
+        includeDeactivated: true,
+      }
+    );
     if (!user || !user?.isVerified) {
       throw new UnauthorizedException("invalid email/password");
     }
@@ -363,6 +369,12 @@ export class AuthService {
         jwtid: refreshTokenId,
       }
     );
+
+    // reactivate the account in case it's deactivated
+    if (user.isDeactivated) {
+      user.isDeactivated = false;
+      user.save();
+    }
 
     return res.status(200).json(
       SuccessResponse<object>("logged In successfully", 200, {

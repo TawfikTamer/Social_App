@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Query } from "mongoose";
 import { genderEnum, IUser, providerEnum, roleEnum } from "../../Common/index";
 
 const userSchema = new mongoose.Schema<IUser>({
@@ -48,6 +48,13 @@ const userSchema = new mongoose.Schema<IUser>({
   coverPicture: String,
   googleId: String,
   needToCompleteData: Boolean,
+});
+
+userSchema.pre(/^find/, function (next) {
+  if (!(this as Query<any, any>).getOptions().includeDeactivated) {
+    (this as Query<any, any>).find({ isDeactivated: { $ne: true } });
+  }
+  next();
 });
 
 export const userModel = mongoose.model<IUser>("users", userSchema);

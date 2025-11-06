@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   authenticationMiddleware,
   multerMiddleWare,
+  verifyRefreshTokenMiddleware,
 } from "../../../Middlewares/index";
 import UserService from "../Services/user.service";
 
@@ -79,6 +80,43 @@ userRouter.get(
   "/profile/list-block-users",
   authenticationMiddleware,
   UserService.listBlockedUsers
+);
+userRouter.put(
+  "/profile/update-profile",
+  authenticationMiddleware,
+  UserService.updateProfileData
+);
+userRouter.post(
+  "/profile/change-email",
+  authenticationMiddleware,
+  UserService.updateEmail
+);
+userRouter.patch(
+  "/profile/confrim-changing-email",
+  authenticationMiddleware,
+  verifyRefreshTokenMiddleware,
+  UserService.confirmNewEmail
+);
+userRouter.patch(
+  "/profile/update-password",
+  authenticationMiddleware,
+  UserService.updatePassword
+);
+userRouter.get(
+  "/profile/profile-data",
+  authenticationMiddleware,
+  UserService.getYourProfileData
+);
+userRouter.get(
+  "/profile/view-profile/:userID",
+  authenticationMiddleware,
+  UserService.viewProfile
+);
+userRouter.patch(
+  "/profile/deActivte",
+  authenticationMiddleware,
+  verifyRefreshTokenMiddleware,
+  UserService.deActivateAccount
 );
 
 export { userRouter };
