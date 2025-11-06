@@ -1,6 +1,6 @@
-import mongoose, { Document } from "mongoose";
+import mongoose, { Document, Types } from "mongoose";
 
-export interface IConversion extends Document<mongoose.Schema.Types.ObjectId> {
+export interface IConversion extends Document<Types.ObjectId> {
   type: string;
   name?: string;
   members?: mongoose.Types.ObjectId[];

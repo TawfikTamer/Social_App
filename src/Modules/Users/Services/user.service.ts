@@ -437,6 +437,7 @@ class UserService {
     res.status(201).json(SuccessResponse("group created", 201, group));
   };
   // ----------------------------------------------------------------------------
+
   updateProfileData = async (req: Request, res: Response) => {
     // get loggedIn user
     const { userData } = (req as IRequest).loggedInUser;

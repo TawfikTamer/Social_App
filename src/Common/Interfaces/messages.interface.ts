@@ -1,7 +1,7 @@
-import mongoose, { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
-export interface IMessage extends Document {
+export interface IMessage extends Document<Types.ObjectId> {
   text: string;
-  ConversionId: mongoose.Types.ObjectId;
-  senderId: mongoose.Types.ObjectId;
+  ConversionId: Types.ObjectId;
+  senderId: Types.ObjectId;
 }
