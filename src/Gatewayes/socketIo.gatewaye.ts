@@ -1,7 +1,7 @@
 import { Server as HttpServer } from "http";
 import { Server, Socket } from "socket.io";
 import { verifyToken } from "../Utils";
-import { ChatInit } from "../Modules/Chats/chat";
+import { ChatInit } from "../Modules/controllers.index";
 
 let io: Server;
 const whitelist = process.env.WHITELIST?.split(",");

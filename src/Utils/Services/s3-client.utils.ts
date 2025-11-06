@@ -56,6 +56,14 @@ export class S3ClientService {
     };
   }
 
+  async uploadFilesOnS3(files: Express.Multer.File[], key: string) {
+    const keys = files.map(async (file) => {
+      return this.uploadFileOnS3(file, key);
+    });
+
+    return await Promise.all(keys);
+  }
+
   async deleteFileFromS3(key_name: string) {
     const deleteCommand = new DeleteObjectCommand({
       Bucket: process.env.BUCKET_NAME,
@@ -65,8 +73,8 @@ export class S3ClientService {
     return await this.s3Client.send(deleteCommand);
   }
 
-  async deleteFolderFromS3(userID: string) {
-    const user_key_name = `${this.key_folder}/${userID}`;
+  async deleteFolderFromS3(folderId: string) {
+    const user_key_name = `${this.key_folder}/${folderId}`;
 
     // list all the keys in the user folder
     const userKeysParams = new ListObjectsV2Command({

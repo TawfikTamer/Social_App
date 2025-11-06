@@ -10,6 +10,7 @@ import {
   conversionsRepository,
   UserOTPsRepository,
   UserRepository,
+  FriendShipRepository,
 } from "../../../DB/Repositories";
 import {
   BadRequestException,
@@ -32,7 +33,7 @@ import {
   IUser,
 } from "../../../Common";
 import { DeleteResult, FilterQuery, Types } from "mongoose";
-import { FriendShipRepository } from "../../../DB/Repositories/friendship.repository";
+
 import { IFriendShip } from "../../../Common";
 import { customAlphabet } from "nanoid";
 

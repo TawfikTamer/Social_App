@@ -2,6 +2,7 @@ export * from "./Enums/user.enum";
 export * from "./Enums/friendShip.enum";
 export * from "./Enums/conversion.enum";
 export * from "./Enums/comment.enum";
+export * from "./Enums/post.enum";
 export * from "./Interfaces/user.interface";
 export * from "./Interfaces/response.interface";
 export * from "./Interfaces/friendShip.interface";

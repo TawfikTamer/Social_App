@@ -1,10 +1,14 @@
 import "dotenv/config";
 import express, { Response, Request, NextFunction } from "express";
 import { dbConnection } from "./DB/db.connection";
-import { authRouter } from "./Modules/Users/Controllers/auth.controller";
+import {
+  authRouter,
+  userRouter,
+  postRouter,
+} from "./Modules/controllers.index";
 import { FailedResponse, HttpException } from "./Utils";
 import cors from "cors";
-import { userRouter } from "./Modules/Users/Controllers/user.controller";
+
 import { ioInitializer } from "./Gatewayes/socketIo.gatewaye";
 
 const app = express();
@@ -27,6 +31,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use("/api/user", authRouter, userRouter);
+app.use("/api/post", postRouter);
 
 app.use((_req, res) => {
   res.status(404).json({ msg: "Route not found" });

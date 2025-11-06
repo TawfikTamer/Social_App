@@ -368,3 +368,60 @@ export const EMAIL_UPDATED_NOTIFICATION = (
 </html>
 `;
 };
+
+export const USER_MENTION_NOTIFICATION = (mentionedBy: string): string => {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>You've Been Mentioned</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f7fa;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 15px 15px 0 0; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+    <div style="background: rgba(255,255,255,0.1); border-radius: 50px; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+      <span style="font-size: 40px;">@</span>
+    </div>
+    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 1px;">You've Been Mentioned!</h1>
+  </div>
+  
+  <div style="background-color: #ffffff; padding: 40px 30px; border-radius: 0 0 15px 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1);">
+    <p style="font-size: 18px; margin-top: 0; color: #555;">Hey there! 👋</p>
+    <p style="color: #666; font-size: 16px;"><strong>${mentionedBy}</strong> mentioned you in a post.</p>
+    
+    <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 30px; border-radius: 12px; margin: 35px 0; text-align: center;">
+      <div style="background: rgba(255,255,255,0.7); padding: 20px; border-radius: 8px; display: inline-block;">
+        <span style="font-size: 48px;">💬</span>
+      </div>
+      <p style="margin: 20px 0 0 0; color: #11998e; font-size: 18px; font-weight: 600;">Check your notifications to see what they said!</p>
+    </div>
+    
+    <div style="background: linear-gradient(90deg, #e3f2fd 0%, #f3e5f5 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #667eea; margin: 25px 0;">
+      <p style="margin: 0; color: #555; font-size: 14px;">
+        <strong>💡 Quick tip:</strong> Reply to keep the conversation going and engage with your community!
+      </p>
+    </div>
+    
+    <p style="color: #777; font-size: 14px; text-align: center; margin: 20px 0;">Don't want to receive mention notifications? You can adjust your notification preferences in your account settings.</p>
+    
+    <div style="margin-top: 40px; padding-top: 25px; border-top: 1px solid #eee;">
+      <p style="margin: 0; color: #555;">
+        <strong style="color: #667eea;">Stay connected,</strong><br>
+        <span style="color: #764ba2; font-weight: 500;">The Notifications Team</span>
+      </p>
+    </div>
+  </div>
+  
+  <div style="text-align: center; margin-top: 25px; padding: 20px;">
+    <p style="color: #999; font-size: 13px; margin: 0;">
+      🤖 This is an automated notification - please do not reply to this email
+    </p>
+    <div style="margin-top: 15px;">
+      <span style="color: #ccc; font-size: 12px;">Secured by SSL encryption</span>
+    </div>
+  </div>
+</body>
+</html>
+`;
+};
