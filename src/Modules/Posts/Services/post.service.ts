@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import {
+  commentOnModelEnum,
   friendShipStatusEnum,
+  IComment,
   IFriendShip,
   IPost,
   IRequest,
@@ -10,6 +12,7 @@ import {
 import { userModel } from "../../../DB/models";
 import {
   BlockListRepository,
+  CommentRepository,
   FriendShipRepository,
   PostRepository,
   UserRepository,
@@ -23,12 +26,12 @@ import {
   USER_MENTION_NOTIFICATION,
 } from "../../../Utils";
 import { FilterQuery, Types } from "mongoose";
-import { skip } from "node:test";
 
 class PostService {
   userRepo: UserRepository = new UserRepository(userModel);
   friendShipReop: FriendShipRepository = new FriendShipRepository();
   postRepo: PostRepository = new PostRepository();
+  commentRepo: CommentRepository = new CommentRepository();
   blockListRepo: BlockListRepository = new BlockListRepository();
   s3 = new S3ClientService();
 
@@ -274,6 +277,28 @@ class PostService {
       await this.s3.deleteFolderFromS3(`${_id}/Posts/${post._id}`);
 
     // delete comments on this post
+    // find all comments on that post
+    const comments = await this.commentRepo.findDocuments({
+      refId: post._id as Types.ObjectId,
+      onModel: commentOnModelEnum.POST,
+    });
+
+    // delete replies for each comment
+    for (const comment of comments as IComment[]) {
+      await this.commentRepo.deleteManyDocuments({
+        refId: comment._id,
+        onModel: commentOnModelEnum.COMMENT,
+      });
+      await this.s3.deleteFolderFromS3(
+        `${comment.ownerId}/Comments/${comment._id}`
+      );
+    }
+
+    // delete all main comments on that post
+    await this.commentRepo.deleteManyDocuments({
+      refId: post._id as Types.ObjectId,
+      onModel: commentOnModelEnum.POST,
+    });
 
     // delete the post
     await post.deleteOne();

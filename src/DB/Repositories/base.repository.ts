@@ -59,4 +59,8 @@ export abstract class BaseRepository<T> {
   ): Promise<T | never[] | T[]> {
     return await this.model.find(filter, projection, options);
   }
+
+  async deleteManyDocuments(filter: FilterQuery<T>): Promise<Object> {
+    return await this.model.deleteMany(filter);
+  }
 }
