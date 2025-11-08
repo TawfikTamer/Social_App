@@ -689,6 +689,7 @@ class UserService {
     // delete user's photos from s3
     // delete user's posts
     // delete user's comments and replyes
+    // delete user's reactions
     // delete user's friendShips
     // delete user's messages
     // delete the user from any group he joined

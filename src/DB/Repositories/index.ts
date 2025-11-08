@@ -7,3 +7,4 @@ export * from "./friendship.repository";
 export * from "./messages.repository";
 export * from "./post.repository";
 export * from "./user.repository";
+export * from "./reaction.repository";

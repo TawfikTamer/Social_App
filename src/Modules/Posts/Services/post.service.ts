@@ -15,6 +15,7 @@ import {
   CommentRepository,
   FriendShipRepository,
   PostRepository,
+  reactionRepository,
   UserRepository,
 } from "../../../DB/Repositories";
 import {
@@ -33,6 +34,7 @@ class PostService {
   postRepo: PostRepository = new PostRepository();
   commentRepo: CommentRepository = new CommentRepository();
   blockListRepo: BlockListRepository = new BlockListRepository();
+  reactionRepo: reactionRepository = new reactionRepository();
   s3 = new S3ClientService();
 
   addPost = async (req: Request, res: Response) => {
@@ -261,6 +263,7 @@ class PostService {
     } = (req as IRequest).loggedInUser as { userData: IUser };
     // get post id
     const { postId } = req.params;
+    console.log(_id);
 
     // find the post
     const post = await this.postRepo.findDocumentById(
@@ -285,10 +288,29 @@ class PostService {
 
     // delete replies for each comment
     for (const comment of comments as IComment[]) {
+      // get all replies of each comment
+      const replies = await this.commentRepo.findDocuments({
+        refId: comment._id,
+        onModel: commentOnModelEnum.COMMENT,
+      });
+
+      // map each reply id to delete its reactions
+      console.log(replies);
+      const repliesId = (replies as IComment[]).map((reply) => reply._id);
+      // delete the reactions on this replies
+      await this.reactionRepo.deleteManyDocuments({
+        reactOn: {
+          $in: [comment._id, ...repliesId, postId],
+        },
+      });
+
+      // delete the replies
       await this.commentRepo.deleteManyDocuments({
         refId: comment._id,
         onModel: commentOnModelEnum.COMMENT,
       });
+
+      // delete attachments of this replies
       await this.s3.deleteFolderFromS3(
         `${comment.ownerId}/Comments/${comment._id}`
       );

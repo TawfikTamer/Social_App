@@ -11,7 +11,7 @@
     /* Type Checking */
     "strict": true,
     "noImplicitAny": true,
-    "noUnusedLocals": false,
+    "noUnusedLocals": true,
     "noUnusedParameters": false,
     "noImplicitReturns": false,
     "allowUnreachableCode": false

@@ -5,6 +5,7 @@ import {
   CommentRepository,
   FriendShipRepository,
   PostRepository,
+  reactionRepository,
   UserRepository,
 } from "../../../DB/Repositories";
 import {
@@ -28,6 +29,7 @@ class CommentService {
   commentRepo: CommentRepository = new CommentRepository();
   postRepo: PostRepository = new PostRepository();
   blockListRepo: BlockListRepository = new BlockListRepository();
+  reactionRepo: reactionRepository = new reactionRepository();
   s3 = new S3ClientService();
 
   addComment = async (req: Request, res: Response) => {
@@ -236,9 +238,23 @@ class CommentService {
 
     // check if the comment has replies and delete them
     if (comment.onModel == commentOnModelEnum.POST) {
-      console.log(comment._id);
+      const replies = await this.commentRepo.findDocuments({
+        refId: comment._id,
+      });
 
-      this.commentRepo.deleteManyDocuments({
+      // Map each reply id
+      const repliesId =
+        (replies as IComment[])?.map((reply) => reply._id) || [];
+
+      // Delete the reactions on this comment and all its replies
+      await this.reactionRepo.deleteManyDocuments({
+        reactOn: {
+          $in: [comment._id, ...repliesId],
+        },
+      });
+
+      // delete the replies
+      await this.commentRepo.deleteManyDocuments({
         refId: comment._id,
       });
 
@@ -248,6 +264,13 @@ class CommentService {
       );
     } else {
       // if you want to delete a reply
+
+      // delete its reactions
+      await this.reactionRepo.deleteManyDocuments({
+        reactOn: comment._id,
+      });
+
+      // delete its attachments
       await this.s3.deleteFolderFromS3(
         `${comment.ownerId}/Comments/${comment.refId._id}/Replies/${comment._id}`
       );
@@ -255,6 +278,8 @@ class CommentService {
 
     // delete the comment
     await comment.deleteOne();
+
+    res.status(200).json(SuccessResponse("comment has been deleted"));
   };
 
   getAllComments = async (req: Request, res: Response) => {
