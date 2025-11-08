@@ -1,6 +1,6 @@
 import { FilterQuery, PaginateOptions } from "mongoose";
 import { IPost } from "../../Common";
-import { postModel } from "../models/post.model";
+import { postModel } from "../models";
 import { BaseRepository } from "./base.repository";
 
 export class PostRepository extends BaseRepository<IPost> {

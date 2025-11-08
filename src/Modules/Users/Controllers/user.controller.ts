@@ -3,7 +3,7 @@ import {
   authenticationMiddleware,
   multerMiddleWare,
   verifyRefreshTokenMiddleware,
-} from "../../../Middlewares/index";
+} from "../../../Middlewares";
 import UserService from "../Services/user.service";
 
 const userRouter = Router();

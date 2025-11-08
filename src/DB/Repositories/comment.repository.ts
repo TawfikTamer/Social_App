@@ -1,6 +1,6 @@
-import { Aggregate, AggregateOptions, PipelineStage } from "mongoose";
+import { AggregateOptions, PipelineStage } from "mongoose";
 import { IComment } from "../../Common";
-import { CommentModel } from "../models/comment.model";
+import { CommentModel } from "../models";
 import { BaseRepository } from "./base.repository";
 
 export class CommentRepository extends BaseRepository<IComment> {

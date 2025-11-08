@@ -1,4 +1,4 @@
-import { IFriendShip } from "../../Common/Interfaces/friendShip.interface";
+import { IFriendShip } from "../../Common";
 import { friendShipModel } from "../models";
 import { BaseRepository } from "./base.repository";
 
