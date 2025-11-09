@@ -42,6 +42,10 @@ const userSchema = new mongoose.Schema<IUser>({
     type: Boolean,
     default: true,
   },
+  twoStepVerification: {
+    type: Boolean,
+    default: false,
+  },
   phoneNumber: String,
   DOB: String,
   profilePicture: String,

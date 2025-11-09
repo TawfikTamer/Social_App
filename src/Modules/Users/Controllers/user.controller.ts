@@ -118,5 +118,11 @@ userRouter.patch(
   verifyRefreshTokenMiddleware,
   UserService.deActivateAccount
 );
+userRouter.post(
+  "/profile/deActivte",
+  authenticationMiddleware,
+  verifyRefreshTokenMiddleware,
+  UserService.deActivateAccount
+);
 
 export { userRouter };

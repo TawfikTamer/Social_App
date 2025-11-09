@@ -31,6 +31,13 @@ authRouter.post(
   validationMiddleware(LogInValidator),
   AuthService.logIn
 );
+
+authRouter.post(
+  "/auth/login-with-2FA",
+  authenticationMiddleware,
+  AuthService.logInWith2FA
+);
+
 authRouter.post(
   "/auth/forget-password",
   validationMiddleware(forgetPasswordValidator),
@@ -53,6 +60,24 @@ authRouter.patch(
   "/auth/refresh-token",
   verifyRefreshTokenMiddleware,
   AuthService.refreshToken
+);
+
+authRouter.post(
+  "/auth/2FA-enable",
+  authenticationMiddleware,
+  AuthService.enable2FA
+);
+
+authRouter.patch(
+  "/auth/2FA-confirm-enable",
+  authenticationMiddleware,
+  AuthService.confirm2FA
+);
+
+authRouter.patch(
+  "/auth/2FA-disable",
+  authenticationMiddleware,
+  AuthService.disable2FA
 );
 
 export { authRouter };

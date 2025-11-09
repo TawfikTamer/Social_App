@@ -425,3 +425,211 @@ export const USER_MENTION_NOTIFICATION = (mentionedBy: string): string => {
 </html>
 `;
 };
+
+// two-factor-auth.template.ts
+export const ENABLE_2FA_VERIFICATION = (otp: string): string => {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enable Two-Factor Authentication</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f7fa;">
+  <div style="background: linear-gradient(135deg, #fc5c7d 0%, #6a82fb 100%); padding: 30px; text-align: center; border-radius: 15px 15px 0 0; box-shadow: 0 4px 15px rgba(252, 92, 125, 0.3);">
+    <div style="background: rgba(255,255,255,0.1); border-radius: 50px; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+      <span style="font-size: 40px;">🔐</span>
+    </div>
+    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 1px;">Enable Two-Factor Authentication</h1>
+  </div>
+  
+  <div style="background-color: #ffffff; padding: 40px 30px; border-radius: 0 0 15px 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1);">
+    <p style="font-size: 18px; margin-top: 0; color: #555;">Secure Your Account! 🛡️</p>
+    <p style="color: #666; font-size: 16px;">You've requested to enable two-factor authentication on your account. This adds an extra layer of security to protect your data.</p>
+    
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 35px 0; padding: 25px; border-radius: 12px; text-align: center; position: relative;">
+      <p style="color: white; margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.9;">Your Verification Code</p>
+      <div style="background: rgba(255,255,255,0.95); padding: 15px 25px; border-radius: 8px; margin: 0 auto; display: inline-block;">
+        <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #333; font-family: 'Courier New', monospace;">${otp}</span>
+      </div>
+    </div>
+    
+    <div style="background: linear-gradient(90deg, #e8f5e9 0%, #c8e6c9 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #4caf50; margin: 25px 0;">
+      <p style="margin: 0 0 10px 0; color: #555; font-size: 14px;">
+        <strong>✅ What happens next:</strong>
+      </p>
+      <ul style="margin: 5px 0; padding-left: 20px; color: #555; font-size: 14px;">
+        <li>Enter this code to confirm activation</li>
+        <li>You'll need to verify your identity on each login</li>
+        <li>Your account will be more secure</li>
+      </ul>
+    </div>
+    
+    <div style="background: linear-gradient(90deg, #fff3e0 0%, #ffe0b2 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #ff9800; margin: 25px 0;">
+      <p style="margin: 0; color: #555; font-size: 14px;">
+        <strong>⚠️ Important:</strong> This code will expire in 15 minutes. If you didn't request this, please ignore this email and your account will remain unchanged.
+      </p>
+    </div>
+    
+    <div style="margin-top: 40px; padding-top: 25px; border-top: 1px solid #eee;">
+      <p style="margin: 0; color: #555;">
+        <strong style="color: #fc5c7d;">Stay secure,</strong><br>
+        <span style="color: #6a82fb; font-weight: 500;">The Security Team</span>
+      </p>
+    </div>
+  </div>
+  
+  <div style="text-align: center; margin-top: 25px; padding: 20px;">
+    <p style="color: #999; font-size: 13px; margin: 0;">
+      🤖 This is an automated message - please do not reply to this email
+    </p>
+    <div style="margin-top: 15px;">
+      <span style="color: #ccc; font-size: 12px;">Secured by SSL encryption</span>
+    </div>
+  </div>
+</body>
+</html>
+`;
+};
+
+export const TWO_FA_ENABLED_CONFIRMATION = (): string => {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two-Factor Authentication Enabled</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f7fa;">
+  <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 30px; text-align: center; border-radius: 15px 15px 0 0; box-shadow: 0 4px 15px rgba(17, 153, 142, 0.3);">
+    <div style="background: rgba(255,255,255,0.1); border-radius: 50px; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+      <span style="font-size: 40px;">✅</span>
+    </div>
+    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 1px;">2FA Successfully Enabled</h1>
+  </div>
+  
+  <div style="background-color: #ffffff; padding: 40px 30px; border-radius: 0 0 15px 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1);">
+    <p style="font-size: 18px; margin-top: 0; color: #555;">Great job! 🎉</p>
+    <p style="color: #666; font-size: 16px;">Two-factor authentication has been successfully enabled on your account.</p>
+    
+    <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 30px; border-radius: 12px; margin: 30px 0; text-align: center;">
+      <div style="background: rgba(255,255,255,0.7); padding: 20px; border-radius: 8px; display: inline-block;">
+        <span style="font-size: 48px;">🛡️</span>
+      </div>
+      <p style="margin: 20px 0 0 0; color: #11998e; font-size: 18px; font-weight: 600;">Your account is now more secure!</p>
+    </div>
+    
+    <div style="background: linear-gradient(90deg, #e3f2fd 0%, #e1f5fe 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #03a9f4; margin: 25px 0;">
+      <p style="margin: 0 0 10px 0; color: #555; font-size: 14px;">
+        <strong>📱 From now on:</strong>
+      </p>
+      <ul style="margin: 5px 0; padding-left: 20px; color: #555; font-size: 14px;">
+        <li>You'll receive a verification code each time you log in</li>
+        <li>Only you can access your account</li>
+        <li>Your data is protected with an extra security layer</li>
+      </ul>
+    </div>
+    
+    <div style="background: linear-gradient(90deg, #fff3e0 0%, #ffe0b2 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #ff9800; margin: 25px 0;">
+      <p style="margin: 0; color: #555; font-size: 14px;">
+        <strong>💡 Pro tip:</strong> You can disable 2FA anytime from your security settings.
+      </p>
+    </div>
+    
+    <div style="margin-top: 40px; padding-top: 25px; border-top: 1px solid #eee;">
+      <p style="margin: 0; color: #555;">
+        <strong style="color: #11998e;">Stay protected,</strong><br>
+        <span style="color: #38ef7d; font-weight: 500;">The Security Team</span>
+      </p>
+    </div>
+  </div>
+  
+  <div style="text-align: center; margin-top: 25px; padding: 20px;">
+    <p style="color: #999; font-size: 13px; margin: 0;">
+      🤖 This is an automated message - please do not reply to this email
+    </p>
+    <div style="margin-top: 15px;">
+      <span style="color: #ccc; font-size: 12px;">Secured by SSL encryption</span>
+    </div>
+  </div>
+</body>
+</html>
+`;
+};
+
+export const LOGIN_2FA_VERIFICATION = (otp: string): string => {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Verification Code</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f7fa;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 15px 15px 0 0; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+    <div style="background: rgba(255,255,255,0.1); border-radius: 50px; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+      <span style="font-size: 40px;">🔑</span>
+    </div>
+    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 300; letter-spacing: 1px;">Login Verification</h1>
+  </div>
+  
+  <div style="background-color: #ffffff; padding: 40px 30px; border-radius: 0 0 15px 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1);">
+    <p style="font-size: 18px; margin-top: 0; color: #555;">Welcome back! 👋</p>
+    <p style="color: #666; font-size: 16px;">Someone just tried to log into your account. To complete your login, please use the verification code below:</p>
+    
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 35px 0; padding: 25px; border-radius: 12px; text-align: center; position: relative;">
+      <p style="color: white; margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.9;">Your Login Code</p>
+      <div style="background: rgba(255,255,255,0.95); padding: 15px 25px; border-radius: 8px; margin: 0 auto; display: inline-block;">
+        <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #333; font-family: 'Courier New', monospace;">${otp}</span>
+      </div>
+    </div>
+    
+    <div style="background: linear-gradient(90deg, #e3f2fd 0%, #e1f5fe 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #03a9f4; margin: 25px 0;">
+      <p style="margin: 0; color: #555; font-size: 14px;">
+        <strong>⏱️ Quick action required:</strong> This code will expire in 10 minutes for your security.
+      </p>
+    </div>
+    
+    <div style="background: linear-gradient(90deg, #ffebee 0%, #ffcdd2 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #f44336; margin: 25px 0;">
+      <p style="margin: 0 0 10px 0; color: #555; font-size: 14px;">
+        <strong>⚠️ Didn't try to log in?</strong>
+      </p>
+      <p style="margin: 0; color: #555; font-size: 14px;">
+        If this wasn't you, your account may be at risk. Please:
+      </p>
+      <ul style="margin: 10px 0 0 0; padding-left: 20px; color: #555; font-size: 14px;">
+        <li>Do NOT share this code with anyone</li>
+        <li>Change your password immediately</li>
+        <li>Contact our support team</li>
+      </ul>
+    </div>
+    
+    <div style="background: linear-gradient(90deg, #e8f5e9 0%, #c8e6c9 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #4caf50; margin: 25px 0;">
+      <p style="margin: 0; color: #555; font-size: 14px;">
+        <strong>💡 Security tip:</strong> Never share your verification codes via email, text, or phone. We will never ask for your code.
+      </p>
+    </div>
+    
+    <div style="margin-top: 40px; padding-top: 25px; border-top: 1px solid #eee;">
+      <p style="margin: 0; color: #555;">
+        <strong style="color: #667eea;">Stay secure,</strong><br>
+        <span style="color: #764ba2; font-weight: 500;">The Security Team</span>
+      </p>
+    </div>
+  </div>
+  
+  <div style="text-align: center; margin-top: 25px; padding: 20px;">
+    <p style="color: #999; font-size: 13px; margin: 0;">
+      🤖 This is an automated message - please do not reply to this email
+    </p>
+    <div style="margin-top: 15px;">
+      <span style="color: #ccc; font-size: 12px;">Secured by SSL encryption</span>
+    </div>
+  </div>
+</body>
+</html>
+`;
+};

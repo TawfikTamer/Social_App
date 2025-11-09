@@ -20,6 +20,7 @@ export interface IUser extends Document<Types.ObjectId> {
   coverPicture?: string;
   googleId?: string;
   needToCompleteData?: boolean;
+  twoStepVerification?: boolean;
 }
 
 export interface IEmailArguments {

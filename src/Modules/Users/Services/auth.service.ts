@@ -34,6 +34,9 @@ import {
   UnauthorizedException,
   PASSWORD_RESET_REQUEST,
   PASSWORD_CHANGED,
+  ENABLE_2FA_VERIFICATION,
+  TWO_FA_ENABLED_CONFIRMATION,
+  LOGIN_2FA_VERIFICATION,
 } from "../../../Utils";
 import { customAlphabet } from "nanoid";
 import { Types } from "mongoose";
@@ -139,13 +142,18 @@ export class AuthService {
     );
 
     // send the otp to the DB
-    await this.otpRep.createNewDocument({
-      userId: newUser._id as Types.ObjectId,
-      confirm: hasedOTP,
-      expiration: new Date(
-        Date.now() + parseInt(process.env.OTPS_EXPIRES_IN_MIN!) * 60 * 1000
-      ),
-    });
+    await this.otpRep.FindAndUpdateOrCreate(
+      {
+        userId: newUser._id as Types.ObjectId,
+      },
+      {
+        userId: newUser._id as Types.ObjectId,
+        confirm: hasedOTP,
+        expiration: new Date(
+          Date.now() + parseInt(process.env.OTPS_EXPIRES_IN_MIN!) * 60 * 1000
+        ),
+      }
+    );
 
     return res
       .status(201)
@@ -335,6 +343,61 @@ export class AuthService {
       throw new UnauthorizedException("invalid email/password");
     }
 
+    // check if 2fa is enabled
+    if (user.twoStepVerification) {
+      // send otp to login
+
+      const nanoid = customAlphabet("1234567890", 6);
+      const OTP: string = nanoid();
+      const hasedOTP = await hashingData(
+        OTP,
+        parseInt(process.env.SALT_ROUNDS as string)
+      );
+      // send email with the OTP
+      emitter.emit("sendEmail", {
+        to: user.email,
+        subject: "Confirm 2 step verification",
+        content: LOGIN_2FA_VERIFICATION(OTP),
+      });
+
+      // send the otp to the DB
+      await this.otpRep.FindAndUpdateOrCreate(
+        {
+          userId: user._id as Types.ObjectId,
+        },
+        {
+          userId: user._id as Types.ObjectId,
+          confirm: hasedOTP,
+          expiration: new Date(
+            Date.now() + parseInt(process.env.OTPS_EXPIRES_IN_MIN!) * 60 * 1000
+          ),
+        }
+      );
+
+      // generate token
+      const accessTokenID = uuidV4();
+      const refreshTokenId = uuidV4();
+
+      // accessToken
+      const accessToken = generateToken(
+        {
+          _id: user._id,
+          email,
+          refreshTokenId,
+          userName: user.userName,
+        },
+        process.env.JWT_ACCESS_KEY as Secret,
+        {
+          expiresIn: "15 Minutes",
+          jwtid: accessTokenID,
+        }
+      );
+
+      return res
+        .status(200)
+        .json(SuccessResponse("sending OTP to login", 200, { accessToken }));
+    }
+
     // generate token
     const accessTokenID = uuidV4();
     const refreshTokenId = uuidV4();
@@ -375,6 +438,78 @@ export class AuthService {
       user.isDeactivated = false;
       user.save();
     }
+
+    return res.status(200).json(
+      SuccessResponse<object>("logged In successfully", 200, {
+        accessToken,
+        refreshToken,
+      })
+    );
+  };
+
+  logInWith2FA = async (req: Request, res: Response) => {
+    //get loggedIn user
+    const { userData } = (req as IRequest).loggedInUser as { userData: IUser };
+    const { OTP }: ConfirmEmailBodyType = req.body;
+
+    // find the otp of this user
+    const userOTP = await this.otpRep.findOneDocument({ userId: userData._id });
+    if (!userOTP || userOTP.expiration < new Date()) {
+      throw new BadRequestException("otp Expired, try to register again");
+    }
+
+    // check if the otp is correct
+    const correctOTP: string = userOTP.confirm as string;
+    const isCorrect = await compareHashedData(OTP, correctOTP);
+    if (!isCorrect) {
+      throw new BadRequestException("wrong OTP");
+    }
+
+    // generate token
+    const accessTokenID = uuidV4();
+    const refreshTokenId = uuidV4();
+
+    // accessToken
+    const accessToken = generateToken(
+      {
+        _id: userData._id,
+        email: userData.email,
+        refreshTokenId,
+        userName: userData.userName,
+      },
+      process.env.JWT_ACCESS_KEY as Secret,
+      {
+        expiresIn: process.env
+          .JWT_ACCESS_EXPIRES_IN as SignOptions["expiresIn"],
+        jwtid: accessTokenID,
+      }
+    );
+
+    // refreshtoken
+    const refreshToken = generateToken(
+      {
+        _id: userData._id,
+        email: userData.email,
+        userName: userData.userName,
+      },
+      process.env.JWT_REFRESH_KEY as Secret,
+      {
+        expiresIn: process.env
+          .JWT_REFRESH_EXPIRES_IN as SignOptions["expiresIn"],
+        jwtid: refreshTokenId,
+      }
+    );
+
+    // reactivate the account in case it's deactivated
+    if (userData.isDeactivated) {
+      userData.isDeactivated = false;
+      userData.save();
+    }
+
+    // delete the otp from DB
+    await this.otpRep.deleteOneDocument({
+      userId: userData._id,
+    });
 
     return res.status(200).json(
       SuccessResponse<object>("logged In successfully", 200, {
@@ -557,7 +692,94 @@ export class AuthService {
       .json({ msg: `Password has been changed, Now try to login` });
   };
 
-  // 2 step V
+  enable2FA = async (req: Request, res: Response) => {
+    //get loggedIn user
+    const { userData } = (req as IRequest).loggedInUser as { userData: IUser };
+
+    // create OTP
+    const nanoid = customAlphabet("1234567890", 6);
+    const OTP: string = nanoid();
+    const hasedOTP = await hashingData(
+      OTP,
+      parseInt(process.env.SALT_ROUNDS as string)
+    );
+    // send email with the OTP
+    emitter.emit("sendEmail", {
+      to: userData.email,
+      subject: "Confirm 2 step verification",
+      content: ENABLE_2FA_VERIFICATION(OTP),
+    });
+
+    // send the otp to the DB
+    await this.otpRep.FindAndUpdateOrCreate(
+      {
+        userId: userData._id as Types.ObjectId,
+      },
+      {
+        userId: userData._id as Types.ObjectId,
+        confirm: hasedOTP,
+        expiration: new Date(
+          Date.now() + parseInt(process.env.OTPS_EXPIRES_IN_MIN!) * 60 * 1000
+        ),
+      }
+    );
+
+    res.status(200).json(SuccessResponse("OTP has been send to your email"));
+  };
+
+  confirm2FA = async (req: Request, res: Response) => {
+    //get loggedIn user
+    const { userData } = (req as IRequest).loggedInUser as { userData: IUser };
+    const { OTP } = req.body;
+
+    if (!OTP) throw new BadRequestException("please insert OTP");
+
+    // find the otp of this user
+    const userOTP = await this.otpRep.findOneDocument({ userId: userData._id });
+    if (!userOTP || userOTP.expiration < new Date()) {
+      throw new BadRequestException("otp Expired, try to reSend the otp again");
+    }
+
+    // check if the otp is correct
+    const correctOTP: string = userOTP.confirm as string;
+    const isCorrect = await compareHashedData(OTP, correctOTP);
+    if (!isCorrect) {
+      throw new BadRequestException("wrong OTP");
+    }
+
+    // delete the otp from DB
+    await this.otpRep.deleteOneDocument({
+      userId: userData._id,
+    });
+
+    // send email with the confirmation
+    emitter.emit("sendEmail", {
+      to: userData.email,
+      subject: "2FA is enabled",
+      content: TWO_FA_ENABLED_CONFIRMATION(),
+    });
+
+    // change 2FA state
+    userData.twoStepVerification = true;
+    await userData.save();
+
+    res.status(200).json(SuccessResponse("OTP has been send to your email"));
+  };
+
+  disable2FA = async (req: Request, res: Response) => {
+    //get loggedIn user
+    const { userData } = (req as IRequest).loggedInUser as { userData: IUser };
+
+    // check if the 2fa is enabled
+    if (!userData.twoStepVerification)
+      throw new BadRequestException("2FA is not enabled");
+
+    // disable 2FA
+    userData.twoStepVerification = false;
+    await userData.save();
+
+    res.status(200).json(SuccessResponse("2FA has been disabled"));
+  };
 }
 
 export default new AuthService();
