@@ -3,8 +3,27 @@ import {
   authenticationMiddleware,
   multerMiddleWare,
   verifyRefreshTokenMiddleware,
+  validationMiddleware,
 } from "../../../Middlewares";
 import UserService from "../Services/user.service";
+import {
+  renewSignedUrlValidator,
+  sendFriendRequestValidator,
+  createGroupValidator,
+  listFriendRequestsValidator,
+  responseToFriendRequestValidator,
+  cancelFriendRequestValidator,
+  deleteRejectedRequestValidator,
+  removeFriendValidator,
+  blockUserValidator,
+  unBlockUserValidator,
+  listBlockedUsersValidator,
+  updateProfileDataValidator,
+  updateEmailValidator,
+  confirmNewEmailValidator,
+  updatePasswordValidator,
+  viewProfileValidator,
+} from "../../../Utils";
 
 const userRouter = Router();
 
@@ -23,6 +42,7 @@ userRouter.patch(
 userRouter.patch(
   "/profile/renew-url",
   authenticationMiddleware,
+  validationMiddleware(renewSignedUrlValidator),
   UserService.renewSignedUrl
 );
 userRouter.delete(
@@ -33,73 +53,87 @@ userRouter.delete(
 userRouter.post(
   "/profile/send-friend-request/:receiverId",
   authenticationMiddleware,
+  validationMiddleware(sendFriendRequestValidator),
   UserService.sendFriendRequest
 );
 userRouter.post(
   "/profile/create-group",
   authenticationMiddleware,
+  validationMiddleware(createGroupValidator),
   UserService.createGroup
 );
 userRouter.get(
   "/profile/list-friends",
   authenticationMiddleware,
+  validationMiddleware(listFriendRequestsValidator),
   UserService.listFriendRequests
 );
 userRouter.patch(
   "/profile/response-to-friendrequest/:senderId",
   authenticationMiddleware,
+  validationMiddleware(responseToFriendRequestValidator),
   UserService.responseToFriendRequest
 );
 
 userRouter.delete(
   "/profile/cancel-friendrequest/:receiverId",
   authenticationMiddleware,
+  validationMiddleware(cancelFriendRequestValidator),
   UserService.cancelFriendRequest
 );
 userRouter.delete(
   "/profile/delete-rejected/:receiverId",
   authenticationMiddleware,
+  validationMiddleware(deleteRejectedRequestValidator),
   UserService.deleteRejectedRequest
 );
 userRouter.delete(
   "/profile/remove-friend/:friendId",
   authenticationMiddleware,
+  validationMiddleware(removeFriendValidator),
   UserService.removeFriend
 );
 userRouter.post(
   "/profile/block-user/:blockedUserId",
   authenticationMiddleware,
+  validationMiddleware(blockUserValidator),
   UserService.blockUser
 );
 userRouter.delete(
   "/profile/unblock-user/:blockedUserId",
   authenticationMiddleware,
+  validationMiddleware(unBlockUserValidator),
   UserService.unBlockUser
 );
 userRouter.get(
   "/profile/list-block-users",
   authenticationMiddleware,
+  validationMiddleware(listBlockedUsersValidator),
   UserService.listBlockedUsers
 );
 userRouter.put(
   "/profile/update-profile",
   authenticationMiddleware,
+  validationMiddleware(updateProfileDataValidator),
   UserService.updateProfileData
 );
 userRouter.post(
   "/profile/change-email",
   authenticationMiddleware,
+  validationMiddleware(updateEmailValidator),
   UserService.updateEmail
 );
 userRouter.patch(
   "/profile/confrim-changing-email",
   authenticationMiddleware,
   verifyRefreshTokenMiddleware,
+  validationMiddleware(confirmNewEmailValidator),
   UserService.confirmNewEmail
 );
 userRouter.patch(
   "/profile/update-password",
   authenticationMiddleware,
+  validationMiddleware(updatePasswordValidator),
   UserService.updatePassword
 );
 userRouter.get(
@@ -110,6 +144,7 @@ userRouter.get(
 userRouter.get(
   "/profile/view-profile/:userID",
   authenticationMiddleware,
+  validationMiddleware(viewProfileValidator),
   UserService.viewProfile
 );
 userRouter.patch(

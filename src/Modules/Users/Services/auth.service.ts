@@ -1,15 +1,5 @@
 import { Request, Response } from "express";
-import {
-  ConfirmEmailBodyType,
-  ForgetPasswordBodyType,
-  genderEnum,
-  IRequest,
-  IUser,
-  LogInBodyType,
-  providerEnum,
-  ResetPasswordBodyType,
-  SignUpBodyType,
-} from "../../../Common";
+import { genderEnum, IRequest, IUser, providerEnum } from "../../../Common";
 import {
   UserOTPsRepository,
   UserRepository,
@@ -68,7 +58,7 @@ export class AuthService {
       gender,
       phoneNumber,
       DOB,
-    }: SignUpBodyType = req.body;
+    } = req.body;
 
     // check if password and confirmPassword match
     if (password !== confirmPassword) {
@@ -173,7 +163,7 @@ export class AuthService {
    * @description Confirm user email with OTP
    */
   confirmEmail = async (req: Request, res: Response) => {
-    const { OTP, email }: ConfirmEmailBodyType = req.body;
+    const { OTP, email } = req.body;
 
     // get the user ID from email
     const user = await this.userRep.findOneDocument({ email });
@@ -318,7 +308,7 @@ export class AuthService {
    * @description Login user with email and password
    */
   logIn = async (req: Request, res: Response) => {
-    const { email, password }: LogInBodyType = req.body;
+    const { email, password } = req.body;
 
     // check if the email exist and verified
     const user = await this.userRep.findOneDocument(
@@ -450,7 +440,7 @@ export class AuthService {
   logInWith2FA = async (req: Request, res: Response) => {
     //get loggedIn user
     const { userData } = (req as IRequest).loggedInUser as { userData: IUser };
-    const { OTP }: ConfirmEmailBodyType = req.body;
+    const { OTP } = req.body;
 
     // find the otp of this user
     const userOTP = await this.otpRep.findOneDocument({ userId: userData._id });
@@ -578,7 +568,7 @@ export class AuthService {
    */
   forgetPassword = async (req: Request, res: Response) => {
     // get the email
-    const { email }: ForgetPasswordBodyType = req.body;
+    const { email } = req.body;
 
     //check for the email in db
     const user = await this.userRep.findOneDocument({ email });
@@ -643,8 +633,7 @@ export class AuthService {
    */
   resetPassword = async (req: Request, res: Response) => {
     // get the otp , new password
-    const { otp, newPassword, confirmNewPassword }: ResetPasswordBodyType =
-      req.body;
+    const { otp, newPassword, confirmNewPassword } = req.body;
     const { userData } = (req as IRequest).loggedInUser;
 
     // get the Right otp from db

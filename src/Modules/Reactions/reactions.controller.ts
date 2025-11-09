@@ -1,6 +1,14 @@
 import { Router } from "express";
 import reactionService from "./Services/reaction.service";
-import { authenticationMiddleware } from "../../Middlewares";
+import {
+  authenticationMiddleware,
+  validationMiddleware,
+} from "../../Middlewares";
+import {
+  reactOnSomethingValidator,
+  unReactOnSomethingValidator,
+  listReactionsValidator,
+} from "../../Utils";
 
 const reactionRouter = Router();
 
@@ -8,6 +16,7 @@ const reactionRouter = Router();
 reactionRouter.post(
   "/react",
   authenticationMiddleware,
+  validationMiddleware(reactOnSomethingValidator),
   reactionService.reactOnSomething
 );
 
@@ -15,6 +24,7 @@ reactionRouter.post(
 reactionRouter.delete(
   "/un-react/:reactionId",
   authenticationMiddleware,
+  validationMiddleware(unReactOnSomethingValidator),
   reactionService.unReactOnSomething
 );
 
@@ -22,6 +32,7 @@ reactionRouter.delete(
 reactionRouter.get(
   "/list-reactions",
   authenticationMiddleware,
+  validationMiddleware(listReactionsValidator),
   reactionService.listReactions
 );
 

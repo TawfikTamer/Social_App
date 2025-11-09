@@ -13,4 +13,3 @@ export * from "./Interfaces/messages.interface";
 export * from "./Interfaces/post.interface";
 export * from "./Interfaces/comment.interface";
 export * from "./Interfaces/reaction.interface";
-export * from "./Types/validators.types";

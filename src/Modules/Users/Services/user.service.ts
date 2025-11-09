@@ -50,17 +50,17 @@ class UserService {
 
   uploadProfilePic = async (req: Request, res: Response) => {
     const { userData } = (req as IRequest).loggedInUser;
-    const coverPic = req.file;
+    const profilePic = req.file;
 
     // check for the user
     if (!userData) throw new BadRequestException("please login");
 
     // check if the file is not send
-    if (!coverPic) throw new BadRequestException("please upload photo first");
+    if (!profilePic) throw new BadRequestException("please upload photo first");
 
     // upload the photo in AWS s3
     const { url, key_name } = await this.s3.uploadFileOnS3(
-      coverPic as Express.Multer.File,
+      profilePic as Express.Multer.File,
       `${userData?._id}/Profile-Pic`
     );
 
@@ -462,6 +462,7 @@ class UserService {
 
     res.status(200).json(SuccessResponse("data updated succeccfully"));
   };
+
   updateEmail = async (req: Request, res: Response) => {
     // get loggedIn user
     const { userData } = (req as IRequest).loggedInUser;
