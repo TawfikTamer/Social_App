@@ -9,14 +9,11 @@ import {
   IUser,
   postVisibilityEnum,
 } from "../../../Common";
-import { userModel } from "../../../DB/models";
 import {
-  BlockListRepository,
   CommentRepository,
   FriendShipRepository,
   PostRepository,
   reactionRepository,
-  UserRepository,
 } from "../../../DB/Repositories";
 import {
   BadRequestException,
@@ -29,34 +26,37 @@ import {
 import { FilterQuery, Types } from "mongoose";
 
 class PostService {
-  userRepo: UserRepository = new UserRepository(userModel);
   friendShipReop: FriendShipRepository = new FriendShipRepository();
   postRepo: PostRepository = new PostRepository();
   commentRepo: CommentRepository = new CommentRepository();
-  blockListRepo: BlockListRepository = new BlockListRepository();
   reactionRepo: reactionRepository = new reactionRepository();
   s3 = new S3ClientService();
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {POST} /api/add-post
+   * @description Create a new post with optional attachments and friend tags
+   */
   addPost = async (req: Request, res: Response) => {
-    // get logged in user
+    // Get logged in user and post data
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
-    // get post data
     const { description, allowComments, tags } = req.body;
     const files = req.files as Express.Multer.File[];
 
-    // make sure there is at least one data for the post
+    // Validate post content
     if (!description && !files?.length)
       throw new BadRequestException("description or files is required");
 
-    // handel tages
+    // Handle user tags
     let uniqueTages: Types.ObjectId[] = [];
     if (tags) {
-      // check if the tags is not doublicated
+      // Remove duplicate tags
       uniqueTages = Array.from(new Set(tags));
 
-      // check if the tags and the post owners are friends
+      // Verify tagged users are friends
       const friends = await this.friendShipReop.findDocuments(
         {
           status: friendShipStatusEnum.ACCEPTED,
@@ -80,7 +80,7 @@ class PostService {
         }
       );
 
-      // check if the tags is for valid users
+      // Validate all tagged users are valid friends
       const filterdFriends = (friends as IFriendShip[]).filter((result) => {
         if (result.senderId != null && result.receiverId != null) return result;
       });
@@ -89,7 +89,7 @@ class PostService {
           "Invalid tags, you can only mention your friends"
         );
 
-      // send notification (email) to the users in the tags about that post
+      // Send notification emails to tagged friends
       (filterdFriends as IFriendShip[]).map((result) => {
         if (result.senderId._id.equals(_id))
           emitter.emit("sendEmail", {
@@ -110,8 +110,8 @@ class PostService {
       });
     }
 
+    // Create initial post record
     let attachments: string[] = [];
-    // create post
     const post = await this.postRepo.createNewDocument({
       description,
       attachments,
@@ -120,7 +120,7 @@ class PostService {
       tags: uniqueTages,
     });
 
-    // upload any attachments
+    // Handle file attachments
     if (files?.length) {
       const uploadedData = await this.s3.uploadFilesOnS3(
         files,
@@ -136,33 +136,37 @@ class PostService {
       .json(SuccessResponse("Post added successfully", 201, post));
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {PUT} /api/update-post/:postId
+   * @description Update an existing post's content, settings, and tags
+   */
   updatePost = async (req: Request, res: Response) => {
-    // get logged in user
+    // Get user and post data
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
-    // get post id
     const { postId } = req.params;
-    // get updated data
     const { description, allowComments, tags } = req.body;
 
-    // find the post
+    // Verify post exists
     const post = await this.postRepo.findDocumentById(
       postId as unknown as Types.ObjectId
     );
     if (!post) throw new BadRequestException("this post is not exist");
 
-    // check if this post belongs to user
+    // Verify post ownership
     if (!post.ownerId.equals(_id))
       throw new BadRequestException("you can't edit others posts");
 
-    // handel tages
+    // Handle updated tags
     let uniqueTages: Types.ObjectId[] = [];
     if (tags) {
-      // check if the tags is not doublicated
+      // Remove duplicate tags
       uniqueTages = Array.from(new Set(tags));
 
-      // check if the tags and the post owners are friends
+      // Verify tagged users are friends
       const friends = await this.friendShipReop.findDocuments(
         {
           status: friendShipStatusEnum.ACCEPTED,
@@ -186,7 +190,7 @@ class PostService {
         }
       );
 
-      // check if the tags is for valid users
+      // Validate all tagged users are valid friends
       const filterdFriends = (friends as IFriendShip[]).filter((result) => {
         if (result.senderId != null && result.receiverId != null) return result;
       });
@@ -195,7 +199,7 @@ class PostService {
           "Invalid tags, you can only mention your friends"
         );
 
-      // send notification (email) to the users in the tags about that post
+      // Send notification emails to newly tagged friends
       (filterdFriends as IFriendShip[]).map((result) => {
         if (result.senderId._id.equals(_id))
           emitter.emit("sendEmail", {
@@ -217,150 +221,160 @@ class PostService {
       post.tags = uniqueTages;
     }
 
-    // update the description
+    // Update post content and settings
     if (description) post.description = description;
-
-    // update comments allowance
     if (allowComments) post.allowComments = allowComments;
 
-    // save the new changes
+    // Save changes
     await post.save();
 
     res.status(200).json(SuccessResponse("post changed successfully"));
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {PATCH} /api/post-visibility/:postId
+   * @description Change visibility settings of a post (public, friends, private)
+   */
   changePostVisibility = async (req: Request, res: Response) => {
-    // get logged in user
+    // Get user and post data
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
-    // get post id
     const { postId } = req.params;
-    // get updated data
     const { visibility } = req.body;
 
-    // find the post
+    // Verify post exists
     const post = await this.postRepo.findDocumentById(
       postId as unknown as Types.ObjectId
     );
     if (!post) throw new BadRequestException("this post is not exist");
 
-    // check if this post belongs to user
+    // Verify post ownership
     if (!post.ownerId.equals(_id))
       throw new BadRequestException("you can't edit others posts");
 
+    // Update and save visibility setting
     post.visibility = visibility;
     await post.save();
 
     res.status(200).json(SuccessResponse("post visibility has been changed"));
   };
 
-  // Delete post
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {DELETE} /api/delete-post/:postId
+   * @description Delete a post and all associated content (comments, reactions, attachments)
+   */
   deletePost = async (req: Request, res: Response) => {
-    // get logged in user
+    // Get user and post data
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
-    // get post id
     const { postId } = req.params;
-    console.log(_id);
 
-    // find the post
+    // Verify post exists
     const post = await this.postRepo.findDocumentById(
       postId as unknown as Types.ObjectId
     );
     if (!post) throw new BadRequestException("this post is not exist");
 
-    // check if this post belongs to user
+    // Verify post ownership
     if (!post.ownerId.equals(_id))
       throw new BadRequestException("you can't delete others posts");
 
-    // delete post attachments
+    // Delete post attachments from S3
     if (post.attachments?.length)
       await this.s3.deleteFolderFromS3(`${_id}/Posts/${post._id}`);
 
-    // delete comments on this post
-    // find all comments on that post
+    // Find all comments on the post
     const comments = await this.commentRepo.findDocuments({
       refId: post._id as Types.ObjectId,
       onModel: commentOnModelEnum.POST,
     });
 
-    // delete replies for each comment
+    // Process each comment and its replies
     for (const comment of comments as IComment[]) {
-      // get all replies of each comment
+      // Get all replies to the comment
       const replies = await this.commentRepo.findDocuments({
         refId: comment._id,
         onModel: commentOnModelEnum.COMMENT,
       });
 
-      // map each reply id to delete its reactions
-      console.log(replies);
+      // Delete reactions on comments and replies
       const repliesId = (replies as IComment[]).map((reply) => reply._id);
-      // delete the reactions on this replies
       await this.reactionRepo.deleteManyDocuments({
         reactOn: {
           $in: [comment._id, ...repliesId, postId],
         },
       });
 
-      // delete the replies
+      // Delete reply comments
       await this.commentRepo.deleteManyDocuments({
         refId: comment._id,
         onModel: commentOnModelEnum.COMMENT,
       });
 
-      // delete attachments of this replies
+      // Delete reply attachments
       await this.s3.deleteFolderFromS3(
         `${comment.ownerId}/Comments/${comment._id}`
       );
     }
 
-    // delete all main comments on that post
+    // Delete main comments
     await this.commentRepo.deleteManyDocuments({
       refId: post._id as Types.ObjectId,
       onModel: commentOnModelEnum.POST,
     });
 
-    // delete the post
+    // Delete the post itself
     await post.deleteOne();
     res.status(200).json(SuccessResponse("post deleted successfully"));
   };
 
-  // list posts
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {GET} /api/list-posts
+   * @description List posts based on filters (home feed, user profile, or own posts)
+   */
   listPosts = async (req: Request, res: Response) => {
-    // get logged in user
+    // Get user and query parameters
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
     const { page, limit, userId, home } = req.query;
 
-    // prepare the limits for pagination
+    // Set up pagination
     const { limit: currentLimit } = pagination({
       page: Number(page),
       limit: Number(limit),
     });
 
-    // check what we will list
+    // Validate query parameters
     if (userId && home)
       throw new BadRequestException("wrong query, only home or userId");
 
-    // check which post will be list
+    // Build filter based on request type
     let filter: FilterQuery<IPost> = {};
 
-    // list specific user's posts
-    if (userId) filter.ownerId = userId;
-    // list home page posts
-    else if (home) {
+    if (userId) {
+      // List specific user's posts
+      filter.ownerId = userId;
+    } else if (home) {
+      // List home feed (posts from others)
       filter.ownerId = { $ne: _id };
       filter.visibility = {
         $in: [postVisibilityEnum.FRIENDS, postVisibilityEnum.PUBLIC],
       };
+    } else {
+      // List user's own posts
+      filter.ownerId = _id;
     }
-    // list user's own posts
-    else filter.ownerId = _id;
 
-    // get all the posts with public and friends visibility
+    // Fetch posts with pagination
     const unFilterdposts = await this.postRepo.postsPagination(filter, {
       select: "description visibility ownerId",
       limit: currentLimit,
@@ -370,60 +384,65 @@ class PostService {
       },
     });
 
-    // filter the posts
+    // Apply additional filters for visibility
     let posts = {};
     if (home || userId) {
-      // get the loggedIn user's friends
+      // Get user's friend list
       const userFriends = await this.friendShipReop.findDocuments({
         $or: [{ senderId: _id }, { receiverId: _id }],
         status: friendShipStatusEnum.ACCEPTED,
       });
-      // filter userFriends array to get only the IDs of the users excepte the logged in one
+
+      // Extract friend IDs
       let friends = (userFriends as IFriendShip[]).map((friend) => {
         if (friend.senderId.equals(_id)) return friend.receiverId.toString();
         else return friend.senderId.toString();
       });
 
+      // Filter posts based on visibility and friendship
       posts = unFilterdposts.docs.filter((post) => {
         if (post.visibility == postVisibilityEnum.FRIENDS) {
-          // make sure the users are friends to each other to see the posts with friends visibility
-          if (friends.includes(post.ownerId.toString())) {
-            return post;
-          }
+          return friends.includes(post.ownerId.toString());
         } else return post;
       });
+    } else {
+      // Return all posts for user's own feed
+      posts = unFilterdposts;
     }
-    // if the user wants to see his posts, just fetch all of them
-    else posts = unFilterdposts;
 
     res
       .status(200)
       .json(SuccessResponse("Posts fetched successfully", 200, posts));
   };
 
-  // get post by id
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {GET} /api/get-post/:postId
+   * @description Get a single post by ID with visibility checks
+   */
   getPost = async (req: Request, res: Response) => {
-    // get logged in user
+    // Get user and post data
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
     const { postId } = req.params;
 
-    // check if the post exist
+    // Verify post exists
     const post = await this.postRepo.findDocumentById(
       postId as unknown as Types.ObjectId
     );
     if (!post) throw new BadRequestException("this post is not exist");
 
-    // check if the post is private
+    // Check private post visibility
     if (post.visibility == postVisibilityEnum.ONLY_ME) {
       if (!post.ownerId.equals(_id))
         throw new BadRequestException("this post is private");
     }
 
-    // check if the post is for friends only
+    // Check friends-only post visibility
     if (post.visibility == postVisibilityEnum.FRIENDS) {
-      // check if the user is a friend
+      // Verify friendship status
       const isFriends = await this.friendShipReop.findOneDocument({
         $or: [
           { senderId: _id, receiverId: post.ownerId },

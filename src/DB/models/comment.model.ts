@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import { commentOnModelEnum, IComment } from "../../Common";
-// import  from "../../Common";
 
 const commentSchema = new mongoose.Schema<IComment>({
   content: String,

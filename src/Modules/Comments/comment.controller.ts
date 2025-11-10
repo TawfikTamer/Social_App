@@ -14,6 +14,7 @@ import {
   addReplyValidator,
   getCommentWithRepliesValidator,
 } from "../../Utils";
+
 const commentRouter = Router();
 
 // Add comment
@@ -24,6 +25,7 @@ commentRouter.post(
   validationMiddleware(addCommentValidator),
   commentService.addComment
 );
+
 // Update comment
 commentRouter.patch(
   "/update-comment/:commentId",
@@ -31,6 +33,7 @@ commentRouter.patch(
   validationMiddleware(updateCommentValidator),
   commentService.updateComment
 );
+
 // Delete comment (comment owner or post owner)
 commentRouter.delete(
   "/delete-comment/:commentId",
@@ -38,6 +41,7 @@ commentRouter.delete(
   validationMiddleware(deleteCommentValidator),
   commentService.deleteComment
 );
+
 // Get all comments for a post
 commentRouter.get(
   "/post-comments/:postId",
@@ -45,6 +49,7 @@ commentRouter.get(
   validationMiddleware(getAllCommentsValidator),
   commentService.getAllComments
 );
+
 // Get comment by id
 commentRouter.get(
   "/get-comment/:commentId",
@@ -52,6 +57,7 @@ commentRouter.get(
   validationMiddleware(getCommentByIdValidator),
   commentService.getCommentById
 );
+
 // Reply on comment
 commentRouter.post(
   "/add-reply",
@@ -60,6 +66,7 @@ commentRouter.post(
   validationMiddleware(addReplyValidator),
   commentService.addReply
 );
+
 // get Comment With Replies
 commentRouter.get(
   "/comment-with-replies/:commentId",

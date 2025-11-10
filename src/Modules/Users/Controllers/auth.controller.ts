@@ -15,17 +15,22 @@ import {
 
 const authRouter = Router();
 
+// ----------------- sign up -----------------
 authRouter.post(
   "/auth/SignUp",
   validationMiddleware(SignUpVa1idator),
   AuthService.singUp
 );
+
 authRouter.post("/auth/auth-gmail", AuthService.gmailAuth);
+
 authRouter.patch(
   "/auth/Confirm",
   validationMiddleware(ConfirmEmailValidator),
   AuthService.confirmEmail
 );
+
+// ----------------- log in  -----------------
 authRouter.post(
   "/auth/login",
   validationMiddleware(LogInValidator),
@@ -38,6 +43,15 @@ authRouter.post(
   AuthService.logInWith2FA
 );
 
+// ----------------- log out -----------------
+authRouter.post(
+  "/auth/logout",
+  authenticationMiddleware,
+  verifyRefreshTokenMiddleware,
+  AuthService.logOut
+);
+
+// ----------------- paswword forget and reset -----------------
 authRouter.post(
   "/auth/forget-password",
   validationMiddleware(forgetPasswordValidator),
@@ -49,19 +63,15 @@ authRouter.patch(
   authenticationMiddleware,
   AuthService.resetPassword
 );
-authRouter.post(
-  "/auth/logout",
-  authenticationMiddleware,
-  verifyRefreshTokenMiddleware,
-  AuthService.logOut
-);
 
+// ----------------- refresh token -----------------
 authRouter.patch(
   "/auth/refresh-token",
   verifyRefreshTokenMiddleware,
   AuthService.refreshToken
 );
 
+// ----------------- 2FA -----------------
 authRouter.post(
   "/auth/2FA-enable",
   authenticationMiddleware,

@@ -2,9 +2,8 @@ import { NextFunction, Request, Response } from "express";
 import { IRequest } from "../Common";
 import { BadRequestException, ConflictException, verifyToken } from "../Utils";
 import { BlackListedTokenRepository } from "../DB/Repositories";
-import { blackListedTokensModel } from "../DB/models";
 
-const blackListRep = new BlackListedTokenRepository(blackListedTokensModel);
+const blackListRep = new BlackListedTokenRepository();
 
 export const verifyRefreshTokenMiddleware = async (
   req: Request | IRequest,

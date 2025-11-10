@@ -1,10 +1,16 @@
-import nodeMailer from "nodemailer";
 import { EventEmitter } from "node:events";
+import nodeMailer from "nodemailer";
 import { IEmailArguments } from "../../Common";
 
 export const emitter = new EventEmitter();
 
-const sendEmail = async ({ to, subject, content, cc, attachments }: IEmailArguments) => {
+const sendEmail = async ({
+  to,
+  subject,
+  content,
+  cc,
+  attachments,
+}: IEmailArguments) => {
   const transport = nodeMailer.createTransport({
     service: "gmail",
     auth: {

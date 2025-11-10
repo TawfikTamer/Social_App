@@ -1,12 +1,9 @@
 import { Request, Response } from "express";
-import { userModel } from "../../../DB/models";
 import {
-  BlockListRepository,
   CommentRepository,
   FriendShipRepository,
   PostRepository,
   reactionRepository,
-  UserRepository,
 } from "../../../DB/Repositories";
 import {
   BadRequestException,
@@ -23,15 +20,27 @@ import {
 } from "../../../Common";
 import { Types } from "mongoose";
 
+/**
+ * Service class handling all comment-related operations including adding, updating,
+ * deleting comments and replies, as well as retrieving comments with their associated data.
+ */
+
 class CommentService {
-  userRepo: UserRepository = new UserRepository(userModel);
   friendShipReop: FriendShipRepository = new FriendShipRepository();
   commentRepo: CommentRepository = new CommentRepository();
   postRepo: PostRepository = new PostRepository();
-  blockListRepo: BlockListRepository = new BlockListRepository();
   reactionRepo: reactionRepository = new reactionRepository();
   s3 = new S3ClientService();
 
+  /**
+   * Adds a new comment to a post
+   * @route POST /comments/add-comment/:postId
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @access Private - Requires authentication
+   * @returns {Promise<void>} 201 - Returns the newly created comment
+   * @throws {BadRequestException} When post doesn't exist, is private, or doesn't allow comments
+   */
   addComment = async (req: Request, res: Response) => {
     // get logged in user
     const {
@@ -96,6 +105,15 @@ class CommentService {
     res.status(201).json(SuccessResponse("comment added", 201, newComment));
   };
 
+  /**
+   * Adds a reply to an existing comment
+   * @route POST /comments/add-reply?commentId=:commentId
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @access Private - Requires authentication
+   * @returns {Promise<void>} 201 - Returns the newly created reply
+   * @throws {BadRequestException} When comment doesn't exist or underlying post has visibility restrictions
+   */
   addReply = async (req: Request, res: Response) => {
     // get logged in user
     const {
@@ -175,6 +193,15 @@ class CommentService {
     res.status(201).json(SuccessResponse("reply added", 201, newReply));
   };
 
+  /**
+   * Updates the content of an existing comment or reply
+   * @route PATCH /comments/update-comment/:commentId
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @access Private - Requires authentication and comment ownership
+   * @returns {Promise<void>} 200 - Success message
+   * @throws {BadRequestException} When comment doesn't exist or user isn't the owner
+   */
   updateComment = async (req: Request, res: Response) => {
     // get logged in user
     const {
@@ -200,6 +227,15 @@ class CommentService {
     res.status(200).json(SuccessResponse("comment has been updated"));
   };
 
+  /**
+   * Deletes a comment or reply and all associated data (reactions, attachments)
+   * @route DELETE /comments/delete-comment/:commentId
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @access Private - Requires authentication and either comment ownership or post ownership
+   * @returns {Promise<void>} 200 - Success message
+   * @throws {BadRequestException} When comment doesn't exist or user lacks delete permission
+   */
   deleteComment = async (req: Request, res: Response) => {
     // get logged in user
     const {
@@ -282,6 +318,15 @@ class CommentService {
     res.status(200).json(SuccessResponse("comment has been deleted"));
   };
 
+  /**
+   * Retrieves all comments for a specific post
+   * @route GET /comments/post-comments/:postId
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @access Private - Requires authentication and appropriate post visibility permissions
+   * @returns {Promise<void>} 200 - Returns array of comments
+   * @throws {BadRequestException} When post doesn't exist or user lacks visibility permission
+   */
   getAllComments = async (req: Request, res: Response) => {
     // get logged in user
     const {
@@ -324,6 +369,15 @@ class CommentService {
     res.status(200).json(SuccessResponse("comments featched", 200, comments));
   };
 
+  /**
+   * Retrieves a specific comment by its ID
+   * @route GET /comments/get-comment/:commentId
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @access Private - Requires authentication
+   * @returns {Promise<void>} 200 - Returns the requested comment
+   * @throws {BadRequestException} When comment doesn't exist
+   */
   getCommentById = async (req: Request, res: Response) => {
     const { commentId } = req.params;
 
@@ -336,6 +390,15 @@ class CommentService {
     res.status(200).json(SuccessResponse("comment featched", 200, comment));
   };
 
+  /**
+   * Retrieves a comment along with all its replies using MongoDB aggregation
+   * @route GET /comments/comment-with-replies/:commentId
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @access Private - Requires authentication
+   * @returns {Promise<void>} 200 - Returns comment with nested replies array
+   * @throws {BadRequestException} When comment doesn't exist
+   */
   getCommentWithReplies = async (req: Request, res: Response) => {
     const { commentId } = req.params;
 

@@ -1,3 +1,4 @@
+import fs, { ReadStream } from "node:fs";
 import {
   DeleteObjectCommand,
   DeleteObjectsCommand,
@@ -8,7 +9,6 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import fs, { ReadStream } from "node:fs";
 
 interface IPutObjectCommandInput extends PutObjectCommandInput {
   Body: string | Buffer | ReadStream;

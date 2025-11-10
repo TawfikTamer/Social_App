@@ -7,10 +7,9 @@ import {
   verifyToken,
 } from "../Utils";
 import { BlackListedTokenRepository, UserRepository } from "../DB/Repositories";
-import { blackListedTokensModel, userModel } from "../DB/models";
 
-const userRep = new UserRepository(userModel);
-const blackListRep = new BlackListedTokenRepository(blackListedTokensModel);
+const userRep = new UserRepository();
+const blackListRep = new BlackListedTokenRepository();
 
 export const authenticationMiddleware = async (
   req: Request,

@@ -2,22 +2,32 @@ import { Request, Response } from "express";
 import { commentOnModelEnum, IRequest, IUser } from "../../../Common";
 import {
   CommentRepository,
-  FriendShipRepository,
   PostRepository,
   reactionRepository,
-  UserRepository,
 } from "../../../DB/Repositories";
-import { userModel } from "../../../DB/models";
+
 import { Types } from "mongoose";
 import { BadRequestException, SuccessResponse } from "../../../Utils";
 
+/**
+ * Service class handling all reaction-related operations including adding,
+ * removing reactions on posts and comments, and listing reactions.
+ */
+
 class reactionService {
-  userRepo: UserRepository = new UserRepository(userModel);
-  friendShipReop: FriendShipRepository = new FriendShipRepository();
   postRepo: PostRepository = new PostRepository();
   commentRepo: CommentRepository = new CommentRepository();
   reactionRepo: reactionRepository = new reactionRepository();
 
+  /**
+   * Adds or updates a reaction on a post or comment
+   * @route POST /reactions/react?postId=:postId OR ?commentId=:commentId
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @access Private - Requires authentication
+   * @returns {Promise<void>} 201 - Success message
+   * @throws {BadRequestException} When post/comment doesn't exist or invalid query parameters
+   */
   reactOnSomething = async (req: Request, res: Response) => {
     // get logged in user
     const {
@@ -65,6 +75,15 @@ class reactionService {
     res.status(201).json(SuccessResponse("reaction added successfully"));
   };
 
+  /**
+   * Removes a reaction from a post or comment
+   * @route DELETE /reactions/unreact/:reactionId?postId=:postId OR ?commentId=:commentId
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @access Private - Requires authentication and reaction ownership
+   * @returns {Promise<void>} 200 - Success message
+   * @throws {BadRequestException} When reaction doesn't exist or invalid query parameters
+   */
   unReactOnSomething = async (req: Request, res: Response) => {
     // get logged in user
     const {
@@ -90,6 +109,15 @@ class reactionService {
     res.status(200).json(SuccessResponse("reaction removed successfully"));
   };
 
+  /**
+   * Lists all reactions on a post or comment
+   * @route GET /reactions/list?postId=:postId OR ?commentId=:commentId
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @access Private - Requires authentication
+   * @returns {Promise<void>} 200 - Returns array of reactions with user info
+   * @throws {BadRequestException} When post/comment doesn't exist or invalid query parameters
+   */
   listReactions = async (req: Request, res: Response) => {
     // get logged in user
     const { postId, commentId } = req.query;

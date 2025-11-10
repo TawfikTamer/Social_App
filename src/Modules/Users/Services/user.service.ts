@@ -1,9 +1,7 @@
 import { Request, Response } from "express";
-import {
-  blackListedTokensModel,
-  otpModel,
-  userModel,
-} from "../../../DB/models";
+import { DeleteResult, FilterQuery, Types } from "mongoose";
+import { customAlphabet } from "nanoid";
+
 import {
   BlackListedTokenRepository,
   BlockListRepository,
@@ -31,40 +29,49 @@ import {
   friendShipStatusEnum,
   IRequest,
   IUser,
+  IFriendShip,
 } from "../../../Common";
-import { DeleteResult, FilterQuery, Types } from "mongoose";
 
-import { IFriendShip } from "../../../Common";
-import { customAlphabet } from "nanoid";
-
+/**
+ * Service class handling all user profile-related operations including:
+ * - Profile management (pictures, personal info)
+ * - Friend requests and relationships
+ * - User blocking functionality
+ * - Group creation and management
+ * - Account settings and privacy
+ * - Account deactivation and deletion
+ */
 class UserService {
-  userRep: UserRepository = new UserRepository(userModel);
+  userRep: UserRepository = new UserRepository();
   friendShipReop: FriendShipRepository = new FriendShipRepository();
   blockListRepo: BlockListRepository = new BlockListRepository();
   conversionsRepo: conversionsRepository = new conversionsRepository();
-  otpRep: UserOTPsRepository = new UserOTPsRepository(otpModel);
-  blackListedRep: BlackListedTokenRepository = new BlackListedTokenRepository(
-    blackListedTokensModel
-  );
+  otpRep: UserOTPsRepository = new UserOTPsRepository();
+  blackListedRep: BlackListedTokenRepository = new BlackListedTokenRepository();
   s3 = new S3ClientService();
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {PATCH} /api/profile/uplaod-profile-pic
+   * @description Upload a new profile picture using multer and S3 storage
+   */
   uploadProfilePic = async (req: Request, res: Response) => {
+    // Get logged in user and file data
     const { userData } = (req as IRequest).loggedInUser;
     const profilePic = req.file;
 
-    // check for the user
+    // Validate user authentication and file upload
     if (!userData) throw new BadRequestException("please login");
-
-    // check if the file is not send
     if (!profilePic) throw new BadRequestException("please upload photo first");
 
-    // upload the photo in AWS s3
+    // Upload photo to AWS S3
     const { url, key_name } = await this.s3.uploadFileOnS3(
       profilePic as Express.Multer.File,
       `${userData?._id}/Profile-Pic`
     );
 
-    // store the key in the DB
+    // Update user profile picture reference
     userData.profilePicture = key_name;
     await userData.save();
 
@@ -76,23 +83,28 @@ class UserService {
     );
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {PATCH} /api/profile/uplaod-cover-pic
+   * @description Upload a new cover photo using multer and S3 storage
+   */
   uploadCoverPic = async (req: Request, res: Response) => {
+    // Get logged in user and file data
     const { userData } = (req as IRequest).loggedInUser;
     const coverPic = req.file;
 
-    // check for the user
+    // Validate user authentication and file upload
     if (!userData) throw new BadRequestException("please login");
-
-    // check if the file is not send
     if (!coverPic) throw new BadRequestException("please upload photo first");
 
-    // upload the photo in AWS s3
+    // Upload photo to AWS S3
     const { url, key_name } = await this.s3.uploadFileOnS3(
       coverPic as Express.Multer.File,
       `${userData?._id}/Cover-Pic`
     );
 
-    // store the key in the DB
+    // Update user cover photo reference
     userData.coverPicture = key_name;
     await userData.save();
 
@@ -104,20 +116,25 @@ class UserService {
     );
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {PATCH} /api/profile/renew-url
+   * @description Generate new signed URL for profile or cover picture
+   */
   renewSignedUrl = async (req: Request, res: Response) => {
+    // Get logged in user and key info
     const { userData } = (req as IRequest).loggedInUser;
     const { key, key_type } = req.body as {
       key: string;
       key_type: "profilePicture" | "coverPicture";
     };
 
-    // check for the user
+    // Validate user and key existence
     if (!userData) throw new BadRequestException("please login");
-
-    // check if the key is exist in the user model
     if (!userData[key_type]) throw new BadRequestException("Invaild Key");
 
-    // renew the url
+    // Generate new signed URL
     const url = await this.s3.getFileWithSignedURL(key);
 
     return res
@@ -126,28 +143,35 @@ class UserService {
   };
 
   // --------------------------- frind ship APIS --------------------------------
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {POST} /api/profile/send-friend-request/:receiverId
+   * @description Send friend request to another user
+   */
   sendFriendRequest = async (req: Request, res: Response) => {
+    // Get sender id and receiver id
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
     const { receiverId } = req.params;
 
-    // check if the receiver is exist
+    // Validate receiver exists
     if (!receiverId) throw new BadRequestException("insert reciver Id");
     const isExist = await this.userRep.findDocumentById(
       receiverId as unknown as Types.ObjectId
     );
     if (!isExist) throw new BadRequestException("this user is not exist");
 
-    // check if the sender and receiver ID are the same
+    // Prevent self-friend requests
     if ((receiverId as unknown as Types.ObjectId) == _id)
       throw new BadRequestException("can't send request to yourself");
 
-    // check if they are not blocking
+    // Check blocking status between users
     if (await isBlockingEachOther(_id, receiverId as unknown as Types.ObjectId))
       throw new BadRequestException("Can't take this action");
 
-    // check if the request has not been send already
+    // Check existing friend request
     const isSendBefore = await this.friendShipReop.findOneDocument({
       $or: [
         { receiverId: receiverId as unknown as Types.ObjectId },
@@ -155,8 +179,9 @@ class UserService {
       ],
     });
 
+    // Handle existing request cases
     if (isSendBefore) {
-      // if the request is rejected , send it again
+      // If rejected, resend request
       if (isSendBefore.status == friendShipStatusEnum.REJECTED) {
         isSendBefore.status = friendShipStatusEnum.PENDING;
         await isSendBefore.save();
@@ -164,12 +189,13 @@ class UserService {
           .status(200)
           .json(SuccessResponse("request resend successfully", 200));
       } else if (isSendBefore.status == friendShipStatusEnum.ACCEPTED) {
+        // If already friends, return friendly message
         return res
           .status(200)
           .json(SuccessResponse("you are already friends", 200));
       }
     } else {
-      // creat new request
+      // Create new friend request
       await this.friendShipReop.createNewDocument({
         senderId: _id,
         receiverId: receiverId as unknown as Types.ObjectId,
@@ -179,26 +205,34 @@ class UserService {
     res.status(200).json(SuccessResponse("request send successfully", 200));
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {GET} /api/profile/list-friends
+   * @description Get list of friend requests or accepted friends based on status
+   */
   listFriendRequests = async (req: Request, res: Response) => {
+    // Get user ID and request status
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
     const { status } = req.query;
 
-    // check for the status
+    // Build filter based on friendship status
     const filter: FilterQuery<IFriendShip> = {
       status: status ? status : friendShipStatusEnum.PENDING,
     };
 
+    // Adjust filter based on status
     if (filter.status == friendShipStatusEnum.ACCEPTED) {
-      // show the user's friends
+      // For accepted friends, show all connections
       filter.$or = [{ receiverId: _id }, { senderId: _id }];
     } else {
-      // show the pending and rejected requests that the user has
+      // For pending/rejected, show only incoming requests
       filter.receiverId = _id;
     }
 
-    // get the list from DB
+    // Fetch friend list with user details
     const list = await this.friendShipReop.findDocuments(
       filter,
       {},
@@ -218,10 +252,12 @@ class UserService {
       }
     );
 
+    // Get user's group memberships
     const groups = await this.conversionsRepo.findDocuments({
       members: { $in: [_id] },
       type: conversionTypeEnum.GROUP,
     });
+
     res.status(200).json(
       SuccessResponse("here is the your friendship list", 200, {
         list,
@@ -230,7 +266,14 @@ class UserService {
     );
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {PATCH} /api/profile/response-to-friendrequest/:senderId
+   * @description Accept or reject a pending friend request
+   */
   responseToFriendRequest = async (req: Request, res: Response) => {
+    // Get user info and response data
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
@@ -239,33 +282,44 @@ class UserService {
       response: friendShipStatusEnum;
     };
 
+    // Find the pending friend request
     const request = await this.friendShipReop.findOneDocument({
       senderId,
       receiverId: _id,
       status: friendShipStatusEnum.PENDING,
     });
 
+    // Validate request exists
     if (!request) throw new BadRequestException("this request if not valid");
 
+    // Update request status
     request.status = response;
     await request.save();
 
     res.status(200).json(SuccessResponse(`request has been ${response}`, 200));
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {DELETE} /api/profile/cancel-friendrequest/:receiverId
+   * @description Cancel a pending friend request sent by the user
+   */
   cancelFriendRequest = async (req: Request, res: Response) => {
+    // Get user and receiver IDs
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
     const { receiverId } = req.params;
 
-    // cancel only the pending request the the user send
+    // Try to delete the pending request
     const isExist = await this.friendShipReop.deleteOneDocument({
       senderId: _id,
       receiverId,
       status: friendShipStatusEnum.PENDING,
     });
 
+    // Check if request was found and deleted
     if (!(isExist as DeleteResult).deletedCount)
       throw new BadRequestException(
         "this request is already canceled or accepted"
@@ -274,32 +328,47 @@ class UserService {
     res.status(200).json(SuccessResponse("request has been canceled", 200));
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {DELETE} /api/profile/delete-rejected/:receiverId
+   * @description Delete a rejected friend request from history
+   */
   deleteRejectedRequest = async (req: Request, res: Response) => {
+    // Get user and receiver IDs
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
     const { receiverId } = req.params;
 
-    // delete only the request that the receiver reject
+    // Try to delete the rejected request
     const isExist = await this.friendShipReop.deleteOneDocument({
       senderId: _id,
       receiverId,
       status: friendShipStatusEnum.REJECTED,
     });
 
+    // Verify request was found and deleted
     if (!(isExist as DeleteResult).deletedCount)
       throw new BadRequestException("this request is already deleted");
 
     res.status(200).json(SuccessResponse("request has been deleted", 200));
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {DELETE} /api/profile/remove-friend/:friendId
+   * @description Remove an accepted friend connection
+   */
   removeFriend = async (req: Request, res: Response) => {
+    // Get user and friend IDs
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
     const { friendId } = req.params;
 
-    // delete the users friendship if they are already friends to each other
+    // Try to delete the friendship connection
     const isExist = await this.friendShipReop.deleteOneDocument({
       $and: [
         {
@@ -318,25 +387,33 @@ class UserService {
       ],
     });
 
+    // Verify friendship existed and was deleted
     if (!(isExist as DeleteResult).deletedCount)
       throw new BadRequestException("you are already not friends");
 
     res.status(200).json(SuccessResponse("friend has been removed", 200));
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {POST} /api/profile/block-user/:blockedUserId
+   * @description Block a user and remove any friend connections
+   */
   blockUser = async (req: Request, res: Response) => {
+    // Get user and target IDs
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
     const { blockedUserId } = req.params;
 
-    // check is this user is exist
+    // Validate target user exists
     const isExist = await this.userRep.findDocumentById(
       blockedUserId as unknown as Types.ObjectId
     );
     if (!isExist) throw new BadRequestException("this user is not exist");
 
-    // check if the one who will be blocked didn't block the user in the first place
+    // Check if target user has already blocked you
     const isBlocked = await this.blockListRepo.findOneDocument({
       userID: blockedUserId,
       theBlockedUser: _id,
@@ -344,13 +421,13 @@ class UserService {
     if (isBlocked)
       throw new BadRequestException("this user already blocked you");
 
-    // block the user
+    // Add block record
     this.blockListRepo.FindAndUpdateOrCreate({
       userID: _id,
       theBlockedUser: blockedUserId as unknown as Types.ObjectId,
     });
 
-    // delete any friend request between this users
+    // Remove any existing friend connections
     this.friendShipReop.deleteOneDocument({
       $or: [
         { senderId: _id, receiverId: blockedUserId },
@@ -361,12 +438,19 @@ class UserService {
     res.status(200).json(SuccessResponse("user has been blocked", 200));
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {GET} /api/profile/list-block-users
+   * @description Get list of users blocked by the current user
+   */
   listBlockedUsers = async (req: Request, res: Response) => {
+    // Get user ID
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
 
-    // get the list from DB
+    // Fetch blocked users with their usernames
     const list = await this.blockListRepo.findDocuments(
       {
         userID: _id,
@@ -385,30 +469,46 @@ class UserService {
     res.status(200).json(SuccessResponse("here is the block list", 200, list));
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {DELETE} /api/profile/unblock-user/:blockedUserId
+   * @description Remove a user from the current user's block list
+   */
   unBlockUser = async (req: Request, res: Response) => {
+    // Get user and target IDs
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
     const { blockedUserId } = req.params;
 
-    // Check if user is blocked before attempting to unblock
+    // Try to remove block record
     const isBlocked = await this.blockListRepo.deleteOneDocument({
       userID: _id,
       theBlockedUser: blockedUserId,
     });
+
+    // Verify block record existed and was removed
     if (!(isBlocked as DeleteResult).deletedCount)
       throw new BadRequestException("you can't unblock this user");
 
     res.status(200).json(SuccessResponse("user has been unblocked", 200));
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {POST} /api/profile/create-group
+   * @description Create a new group with specified members from friends list
+   */
   createGroup = async (req: Request, res: Response) => {
+    // Get user ID and group details
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
     const { name, members } = req.body;
 
-    // check for the members in DB
+    // Validate all members exist
     const membersExist = await this.userRep.findDocuments({
       _id: {
         $in: members,
@@ -417,7 +517,7 @@ class UserService {
     if (members.length != (membersExist as string[]).length)
       throw new BadRequestException("members not found");
 
-    // check if the users are friends
+    // Verify all members are friends with creator
     const isFriends = await this.friendShipReop.findDocuments({
       $or: [
         { senderId: _id, receiverId: { $in: members } },
@@ -426,9 +526,11 @@ class UserService {
       status: friendShipStatusEnum.ACCEPTED,
     });
 
+    // Ensure all members are from friends list
     if (members.length != (isFriends as string[]).length)
       throw new BadRequestException("members are not friends");
 
+    // Create the group with all members including creator
     const group = await this.conversionsRepo.createNewDocument({
       type: conversionTypeEnum.GROUP,
       name,
@@ -439,16 +541,24 @@ class UserService {
   };
   // ----------------------------------------------------------------------------
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {PUT} /api/profile/update-profile
+   * @description Update user profile information (username, gender, privacy, phone, DOB)
+   */
   updateProfileData = async (req: Request, res: Response) => {
-    // get loggedIn user
+    // Get current user data
     const { userData } = (req as IRequest).loggedInUser;
-    // get data to be updated
+
+    // Get fields to update
     const { userName, gender, isPublic, phoneNumber, DOB } = req.body as IUser;
 
-    // encrypt phoneNumber
+    // Handle phone number encryption if provided
     let encryptedPhoneNumber = undefined;
     if (phoneNumber) encryptedPhoneNumber = encrypt(phoneNumber as string);
 
+    // Prepare update data with fallbacks to current values
     const newData = {
       userName: userName || userData?.userName,
       gender: gender || userData?.gender,
@@ -457,19 +567,24 @@ class UserService {
       DOB: DOB || userData?.DOB,
     };
 
-    // update the user
+    // Perform update operation
     this.userRep.updateOneDocument({ _id: userData?._id }, newData);
 
-    res.status(200).json(SuccessResponse("data updated succeccfully"));
+    res.status(200).json(SuccessResponse("data updated successfully"));
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {POST} /api/profile/change-email
+   * @description Initiate email change process by sending OTP to new email
+   */
   updateEmail = async (req: Request, res: Response) => {
-    // get loggedIn user
+    // Get current user info
     const { userData } = (req as IRequest).loggedInUser;
-    // get the new email
     const { newEmail } = req.body;
 
-    // check if the new email is exist
+    // Validate new email is not already in use
     const isNewEmailExist = await this.userRep.findOneDocument({
       _id: { $ne: userData?._id },
       email: newEmail,
@@ -477,28 +592,28 @@ class UserService {
     if (isNewEmailExist)
       throw new BadRequestException("this email already exist");
 
-    // check if the new email is the current one
+    // Prevent unnecessary updates
     if (userData?.email == newEmail)
       throw new BadRequestException("this is your current email");
 
-    // send an email to the user to confirm the new one
+    // Generate verification OTP
     const nanoid = customAlphabet("1234567890", 6);
     const OTP: string = nanoid();
 
-    // send email with the OTP
+    // Send verification email
     emitter.emit("sendEmail", {
       to: newEmail,
       subject: "Confirm New Email",
       content: CHANGE_EMAIL_VERIFICATION(OTP, newEmail),
     });
 
-    // hash the otp
+    // Store hashed OTP
     const hasedOTP = await hashingData(
       OTP,
       parseInt(process.env.SALT_ROUNDS as string)
     );
 
-    // send the otp to the DB
+    // Save OTP record with expiration
     await this.otpRep.createNewDocument({
       userId: userData?._id as Types.ObjectId,
       confirm: hasedOTP,
@@ -509,36 +624,41 @@ class UserService {
 
     res.status(200).json(SuccessResponse("please check your new email"));
   };
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {PATCH} /api/profile/confrim-changing-email
+   * @description Verify OTP and complete email change process
+   */
   confirmNewEmail = async (req: Request, res: Response) => {
-    // get loggedIn user
+    // Get user data and tokens
     const { userData, accessTokenData, refreshTokenData } = (req as IRequest)
       .loggedInUser;
-    // get the new email and the OTP
     const { newEmail, OTP } = req.body;
 
-    // find the otp of this user
+    // Find and validate OTP
     const userOTP = await this.otpRep.findOneDocument({
       userId: userData?._id,
     });
-    console.log(userData);
 
+    // Check OTP validity and expiration
     if (!userOTP || userOTP.expiration < new Date()) {
       throw new BadRequestException("otp Expired, try to register again");
     }
 
-    // check if the otp is correct
+    // Verify OTP matches
     const correctOTP: string = userOTP.confirm as string;
     const isCorrect = await compareHashedData(OTP, correctOTP);
     if (!isCorrect) {
       throw new BadRequestException("wrong OTP");
     }
 
-    // delete the otp from DB
+    // Cleanup used OTP
     await this.otpRep.deleteOneDocument({
       userId: userData?._id,
     });
 
-    // send welcome email
+    // Send confirmation email
     emitter.emit("sendEmail", {
       to: newEmail,
       subject: "Welcome Email",
@@ -548,16 +668,17 @@ class UserService {
       ),
     });
 
-    // update the new email
+    // Update user's email
     if (userData) userData.email = newEmail;
 
-    // revoke the token to log out the user
+    // Invalidate current tokens
     await this.blackListedRep.createNewDocument({
       accsessTokenId: accessTokenData?.jti,
       refreshTokenId: refreshTokenData?.jti,
       expirationDate: new Date((accessTokenData?.exp as number) * 1000),
     });
 
+    // Save changes and send response
     userData?.save();
     return res
       .status(200)
@@ -568,30 +689,35 @@ class UserService {
         )
       );
   };
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {PATCH} /api/profile/update-password
+   * @description Update user password with verification
+   */
   updatePassword = async (req: Request, res: Response) => {
-    // get loggedIn user
+    // Get current user data
     const { userData } = (req as IRequest).loggedInUser;
-    // get the old and new Passwords
     const { oldPassword, newPassword, confirmNewPassword } = req.body;
 
-    // check if the new password and the confirm one is matches
+    // Validate password confirmation matches
     if (newPassword !== confirmNewPassword)
       throw new BadRequestException("passwords don't match");
 
-    // check if the old password is the correct one
+    // Verify current password
     const isCorrect = await compareHashedData(
       oldPassword,
       userData?.password as string
     );
     if (!isCorrect) throw new BadRequestException("wrong password");
 
-    // check if the new password is the old one
+    // Prevent using same password
     if (oldPassword == newPassword)
       throw new BadRequestException(
         "can't change the password to the current one"
       );
 
-    // has the new password and update it
+    // Hash and update new password
     const hasedPassword = await hashingData(
       newPassword as string,
       parseInt(process.env.SALT_ROUNDS as string)
@@ -599,7 +725,7 @@ class UserService {
     if (userData) userData.password = hasedPassword;
     userData?.save();
 
-    // send an email to inform the user about
+    // Send change notification email
     emitter.emit("sendEmail", {
       to: userData!.email,
       subject: `password Changed`,
@@ -609,15 +735,22 @@ class UserService {
     res.status(200).json(SuccessResponse("password has been changed"));
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {GET} /api/profile/profile-data
+   * @description Get current user's profile data with decrypted phone number
+   */
   getYourProfileData = async (req: Request, res: Response) => {
-    //get loggedIn user
+    // Extract profile fields from user data
     const {
       userData: { userName, email, phoneNumber, DOB, isPublic, gender },
     } = (req as IRequest).loggedInUser as { userData: IUser };
 
-    // decrypt the phone number
+    // Decrypt sensitive information
     const decryptedPhoneNumber = decrypt(phoneNumber as string);
 
+    // Return formatted profile data
     res.status(200).json(
       SuccessResponse("here is your data", 200, {
         userName,
@@ -630,20 +763,27 @@ class UserService {
     );
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {GET} /api/profile/view-profile/:userID
+   * @description View another user's profile with friendship status
+   */
   viewProfile = async (req: Request, res: Response) => {
+    // Get current user and target user IDs
     const {
       userData: { _id },
     } = (req as IRequest).loggedInUser as { userData: IUser };
     const { userID } = req.params;
 
-    // search for the user
+    // Find target user's public profile data
     const user = await this.userRep.findOneDocument(
       { _id: userID },
       "userName gender coverPicture profilePicture "
     );
     if (!user) throw new BadRequestException("this user not found");
 
-    // get friend state
+    // Get friendship status between users
     const friendState = await this.friendShipReop.findOneDocument({
       $or: [
         { senderId: user._id, receiverId: _id },
@@ -651,6 +791,7 @@ class UserService {
       ],
     });
 
+    // Return profile with friendship info
     res.status(200).json(
       SuccessResponse("here is user profile", 200, {
         user,
@@ -659,16 +800,22 @@ class UserService {
     );
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {PATCH} /api/profile/deActivte
+   * @description Temporarily deactivate user account and invalidate tokens
+   */
   deActivateAccount = async (req: Request, res: Response) => {
-    //get loggedIn user
+    // Get user data and tokens
     const { userData, accessTokenData, refreshTokenData } = (req as IRequest)
       .loggedInUser;
 
-    // deactivate the account
+    // Set account as deactivated
     userData!.isDeactivated = true;
     userData?.save();
 
-    // revoke the token to log out the user
+    // Invalidate current auth tokens
     await this.blackListedRep.createNewDocument({
       accsessTokenId: accessTokenData?.jti,
       refreshTokenId: refreshTokenData?.jti,
@@ -684,16 +831,23 @@ class UserService {
       );
   };
 
+  /**
+   * @param {import("express").Request} req
+   * @param {import("express").Response} res
+   * @API {DELETE} /api/profile/delete-user
+   * @description Permanently delete user account and all associated data
+   */
   deleteAccount = async (req: Request, res: Response) => {
-    // delete user account from user nodel
-    // delete any otm for the user
-    // delete user's photos from s3
+    // TODO: Implement account deletion with these steps:
+    // delete user account from user model
+    // delete any OTP for the user
+    // delete user's photos from S3
     // delete user's posts
-    // delete user's comments and replyes
+    // delete user's comments and replies
     // delete user's reactions
-    // delete user's friendShips
+    // delete user's friendships
     // delete user's messages
-    // delete the user from any group he joined
+    // delete the user from any group they joined
   };
 }
 

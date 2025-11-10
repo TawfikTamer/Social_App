@@ -1,14 +1,16 @@
 import { Request, Response } from "express";
+import { customAlphabet } from "nanoid";
+import { Types } from "mongoose";
+import { Secret, SignOptions } from "jsonwebtoken";
+import { v4 as uuidV4 } from "uuid";
+import { OAuth2Client, TokenPayload } from "google-auth-library";
+
 import { genderEnum, IRequest, IUser, providerEnum } from "../../../Common";
 import {
   UserOTPsRepository,
   UserRepository,
 } from "../../../DB/Repositories/index";
-import {
-  userModel,
-  otpModel,
-  blackListedTokensModel,
-} from "../../../DB/models/index";
+
 import {
   emitter,
   encrypt,
@@ -28,19 +30,17 @@ import {
   TWO_FA_ENABLED_CONFIRMATION,
   LOGIN_2FA_VERIFICATION,
 } from "../../../Utils";
-import { customAlphabet } from "nanoid";
-import { Types } from "mongoose";
-import { Secret, SignOptions } from "jsonwebtoken";
-import { v4 as uuidV4 } from "uuid";
 import { BlackListedTokenRepository } from "../../../DB/Repositories/black-listed-tokens.repository";
-import { OAuth2Client, TokenPayload } from "google-auth-library";
 
+/**
+ * Service class handling all authentication-related operations including
+ * registration, login, password recovery, and two-factor authentication.
+ * Supports both local authentication and Google OAuth integration.
+ */
 export class AuthService {
-  userRep: UserRepository = new UserRepository(userModel);
-  otpRep: UserOTPsRepository = new UserOTPsRepository(otpModel);
-  blackListedRep: BlackListedTokenRepository = new BlackListedTokenRepository(
-    blackListedTokensModel
-  );
+  userRep: UserRepository = new UserRepository();
+  otpRep: UserOTPsRepository = new UserOTPsRepository();
+  blackListedRep: BlackListedTokenRepository = new BlackListedTokenRepository();
 
   /**
    * @param {import("express").Request} req
