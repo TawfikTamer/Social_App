@@ -37,6 +37,13 @@ export abstract class BaseRepository<T> {
     return await this.model.updateOne(filter, document);
   }
 
+  async updateManyDocument(
+    filter: FilterQuery<T>,
+    document: UpdateQuery<T>
+  ): Promise<Object> {
+    return await this.model.updateMany(filter, document);
+  }
+
   async deleteOneDocument(filter: FilterQuery<T>): Promise<Object> {
     return await this.model.deleteOne(filter);
   }
@@ -56,7 +63,7 @@ export abstract class BaseRepository<T> {
     filter: FilterQuery<T>,
     projection?: ProjectionType<T>,
     options?: QueryOptions
-  ): Promise<T | never[] | T[]> {
+  ): Promise<never[] | T[]> {
     return await this.model.find(filter, projection, options);
   }
 

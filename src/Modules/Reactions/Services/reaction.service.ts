@@ -7,7 +7,11 @@ import {
 } from "../../../DB/Repositories";
 
 import { Types } from "mongoose";
-import { BadRequestException, SuccessResponse } from "../../../Utils";
+import {
+  BadRequestException,
+  NotFoundException,
+  SuccessResponse,
+} from "../../../Utils";
 
 /**
  * Service class handling all reaction-related operations including adding,
@@ -47,7 +51,7 @@ class reactionService {
       const isPostExist = await this.postRepo.findDocumentById(
         postId as unknown as Types.ObjectId
       );
-      if (!isPostExist) throw new BadRequestException("this post is not exist");
+      if (!isPostExist) throw new NotFoundException("this post is not exist");
       refModel = commentOnModelEnum.POST;
     }
 
@@ -57,7 +61,7 @@ class reactionService {
         commentId as unknown as Types.ObjectId
       );
       if (!iscommentExist)
-        throw new BadRequestException("this comment is not exist");
+        throw new NotFoundException("this comment is not exist");
       refModel = commentOnModelEnum.COMMENT;
     }
 
@@ -103,7 +107,7 @@ class reactionService {
       reactOn: postId || commentId,
     });
 
-    if (!reaction) throw new BadRequestException("this reaction is not found");
+    if (!reaction) throw new NotFoundException("this reaction is not found");
 
     await reaction.deleteOne();
     res.status(200).json(SuccessResponse("reaction removed successfully"));
@@ -131,7 +135,7 @@ class reactionService {
       const isPostExist = await this.postRepo.findDocumentById(
         postId as unknown as Types.ObjectId
       );
-      if (!isPostExist) throw new BadRequestException("this post is not exist");
+      if (!isPostExist) throw new NotFoundException("this post is not exist");
     }
 
     // if the react is on comment, check if its exist
@@ -140,7 +144,7 @@ class reactionService {
         commentId as unknown as Types.ObjectId
       );
       if (!iscommentExist)
-        throw new BadRequestException("this comment is not exist");
+        throw new NotFoundException("this comment is not exist");
     }
 
     const reactions = await this.reactionRepo.findDocuments(

@@ -17,6 +17,8 @@ import {
 } from "../../../DB/Repositories";
 import {
   BadRequestException,
+  NotFoundException,
+  UnauthorizedException,
   emitter,
   pagination,
   S3ClientService,
@@ -154,11 +156,11 @@ class PostService {
     const post = await this.postRepo.findDocumentById(
       postId as unknown as Types.ObjectId
     );
-    if (!post) throw new BadRequestException("this post is not exist");
+    if (!post) throw new NotFoundException("this post is not exist");
 
     // Verify post ownership
     if (!post.ownerId.equals(_id))
-      throw new BadRequestException("you can't edit others posts");
+      throw new UnauthorizedException("you can't edit others posts");
 
     // Handle updated tags
     let uniqueTages: Types.ObjectId[] = [];
@@ -249,11 +251,11 @@ class PostService {
     const post = await this.postRepo.findDocumentById(
       postId as unknown as Types.ObjectId
     );
-    if (!post) throw new BadRequestException("this post is not exist");
+    if (!post) throw new NotFoundException("this post is not exist");
 
     // Verify post ownership
     if (!post.ownerId.equals(_id))
-      throw new BadRequestException("you can't edit others posts");
+      throw new UnauthorizedException("you can't edit others posts");
 
     // Update and save visibility setting
     post.visibility = visibility;
@@ -279,11 +281,11 @@ class PostService {
     const post = await this.postRepo.findDocumentById(
       postId as unknown as Types.ObjectId
     );
-    if (!post) throw new BadRequestException("this post is not exist");
+    if (!post) throw new NotFoundException("this post is not exist");
 
     // Verify post ownership
     if (!post.ownerId.equals(_id))
-      throw new BadRequestException("you can't delete others posts");
+      throw new UnauthorizedException("you can't delete others posts");
 
     // Delete post attachments from S3
     if (post.attachments?.length)
@@ -432,12 +434,12 @@ class PostService {
     const post = await this.postRepo.findDocumentById(
       postId as unknown as Types.ObjectId
     );
-    if (!post) throw new BadRequestException("this post is not exist");
+    if (!post) throw new NotFoundException("this post is not exist");
 
     // Check private post visibility
     if (post.visibility == postVisibilityEnum.ONLY_ME) {
       if (!post.ownerId.equals(_id))
-        throw new BadRequestException("this post is private");
+        throw new UnauthorizedException("this post is private");
     }
 
     // Check friends-only post visibility
@@ -451,7 +453,7 @@ class PostService {
         status: friendShipStatusEnum.ACCEPTED,
       });
       if (!isFriends)
-        throw new BadRequestException("this post is for friends only");
+        throw new UnauthorizedException("this post is for friends only");
     }
 
     res

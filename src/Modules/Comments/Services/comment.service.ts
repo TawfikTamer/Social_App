@@ -7,6 +7,8 @@ import {
 } from "../../../DB/Repositories";
 import {
   BadRequestException,
+  NotFoundException,
+  UnauthorizedException,
   S3ClientService,
   SuccessResponse,
 } from "../../../Utils";
@@ -56,12 +58,12 @@ class CommentService {
     const post = await this.postRepo.findDocumentById(
       postId as unknown as Types.ObjectId
     );
-    if (!post) throw new BadRequestException("this post is not exist");
+    if (!post) throw new NotFoundException("this post is not exist");
 
     // check if the post is private
     if (post.visibility == postVisibilityEnum.ONLY_ME) {
       if (!post.ownerId.equals(_id))
-        throw new BadRequestException("this post is private");
+        throw new UnauthorizedException("this post is private");
     }
 
     // check if the post is for friends only
@@ -75,7 +77,7 @@ class CommentService {
         status: friendShipStatusEnum.ACCEPTED,
       });
       if (!isFriends)
-        throw new BadRequestException("this post is for friends only");
+        throw new UnauthorizedException("this post is for friends only");
     }
 
     // check if the post's owner allow comments
@@ -130,7 +132,7 @@ class CommentService {
       commentId as unknown as Types.ObjectId
     );
     if (!comment)
-      throw new BadRequestException(
+      throw new NotFoundException(
         "you can't reply to this comment because it is not exist"
       );
 
@@ -144,12 +146,12 @@ class CommentService {
     const post = await this.postRepo.findDocumentById(
       postId as unknown as Types.ObjectId
     );
-    if (!post) throw new BadRequestException("this post is not exist");
+    if (!post) throw new NotFoundException("this post is not exist");
 
     // check if the post is private
     if (post.visibility == postVisibilityEnum.ONLY_ME) {
       if (!post.ownerId.equals(_id))
-        throw new BadRequestException("this post is private");
+        throw new UnauthorizedException("this post is private");
     }
 
     // check if the post is for friends only
@@ -163,7 +165,7 @@ class CommentService {
         status: friendShipStatusEnum.ACCEPTED,
       });
       if (!isFriends)
-        throw new BadRequestException("this post is for friends only");
+        throw new UnauthorizedException("this post is for friends only");
     }
 
     // check if the post's owner allow comments
@@ -214,11 +216,11 @@ class CommentService {
     const comment = await this.commentRepo.findDocumentById(
       commentId as unknown as Types.ObjectId
     );
-    if (!comment) throw new BadRequestException("this comment is not exist");
+    if (!comment) throw new NotFoundException("this comment is not exist");
 
     // check if the user is the owner of the comment
     if (!comment.ownerId.equals(_id))
-      throw new BadRequestException("you can't update others comments");
+      throw new UnauthorizedException("you can't update others comments");
 
     // update the comment
     comment.content = newContent;
@@ -253,7 +255,7 @@ class CommentService {
         },
       }
     );
-    if (!comment) throw new BadRequestException("this comment is not exist");
+    if (!comment) throw new NotFoundException("this comment is not exist");
 
     let postId;
     if (comment.onModel == commentOnModelEnum.POST)
@@ -264,11 +266,11 @@ class CommentService {
     const post = await this.postRepo.findDocumentById(
       postId as unknown as Types.ObjectId
     );
-    if (!post) throw new BadRequestException("this post is not exist");
+    if (!post) throw new NotFoundException("this post is not exist");
 
     // check if the user is the owner of the comment or the user is the post owner
     if (!post.ownerId.equals(_id) && !comment.ownerId.equals(_id))
-      throw new BadRequestException(
+      throw new UnauthorizedException(
         "you don't have access to delete this comment"
       );
 
@@ -385,7 +387,7 @@ class CommentService {
       _id: commentId as unknown as Types.ObjectId,
       onModel: commentOnModelEnum.POST,
     });
-    if (!comment) throw new BadRequestException("this comment is not exist");
+    if (!comment) throw new NotFoundException("this comment is not exist");
 
     res.status(200).json(SuccessResponse("comment featched", 200, comment));
   };
@@ -436,7 +438,7 @@ class CommentService {
       },
     ]);
     if (!fullComment.length)
-      throw new BadRequestException("this comment is not exist");
+      throw new NotFoundException("this comment is not exist");
 
     res
       .status(200)

@@ -176,6 +176,7 @@ userRouter.patch(
 userRouter.delete(
   "/profile/delete-user",
   authenticationMiddleware,
+  verifyRefreshTokenMiddleware,
   UserService.deleteAccount
 );
 

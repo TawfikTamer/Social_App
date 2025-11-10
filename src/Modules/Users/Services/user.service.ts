@@ -9,9 +9,15 @@ import {
   UserOTPsRepository,
   UserRepository,
   FriendShipRepository,
+  PostRepository,
+  CommentRepository,
+  reactionRepository,
 } from "../../../DB/Repositories";
 import {
   BadRequestException,
+  NotFoundException,
+  UnauthorizedException,
+  ConflictException,
   CHANGE_EMAIL_VERIFICATION,
   compareHashedData,
   decrypt,
@@ -30,7 +36,11 @@ import {
   IRequest,
   IUser,
   IFriendShip,
+  IPost,
+  commentOnModelEnum,
+  IComment,
 } from "../../../Common";
+import { JwtPayload } from "jsonwebtoken";
 
 /**
  * Service class handling all user profile-related operations including:
@@ -48,6 +58,10 @@ class UserService {
   conversionsRepo: conversionsRepository = new conversionsRepository();
   otpRep: UserOTPsRepository = new UserOTPsRepository();
   blackListedRep: BlackListedTokenRepository = new BlackListedTokenRepository();
+  postRepo: PostRepository = new PostRepository();
+  commentRepo: CommentRepository = new CommentRepository();
+  reactionRepo: reactionRepository = new reactionRepository();
+
   s3 = new S3ClientService();
 
   /**
@@ -161,7 +175,7 @@ class UserService {
     const isExist = await this.userRep.findDocumentById(
       receiverId as unknown as Types.ObjectId
     );
-    if (!isExist) throw new BadRequestException("this user is not exist");
+    if (!isExist) throw new NotFoundException("this user is not exist");
 
     // Prevent self-friend requests
     if ((receiverId as unknown as Types.ObjectId) == _id)
@@ -169,7 +183,7 @@ class UserService {
 
     // Check blocking status between users
     if (await isBlockingEachOther(_id, receiverId as unknown as Types.ObjectId))
-      throw new BadRequestException("Can't take this action");
+      throw new UnauthorizedException("Can't take this action");
 
     // Check existing friend request
     const isSendBefore = await this.friendShipReop.findOneDocument({
@@ -290,7 +304,7 @@ class UserService {
     });
 
     // Validate request exists
-    if (!request) throw new BadRequestException("this request if not valid");
+    if (!request) throw new NotFoundException("this request is not valid");
 
     // Update request status
     request.status = response;
@@ -350,7 +364,7 @@ class UserService {
 
     // Verify request was found and deleted
     if (!(isExist as DeleteResult).deletedCount)
-      throw new BadRequestException("this request is already deleted");
+      throw new NotFoundException("this request is already deleted");
 
     res.status(200).json(SuccessResponse("request has been deleted", 200));
   };
@@ -389,7 +403,7 @@ class UserService {
 
     // Verify friendship existed and was deleted
     if (!(isExist as DeleteResult).deletedCount)
-      throw new BadRequestException("you are already not friends");
+      throw new NotFoundException("you are already not friends");
 
     res.status(200).json(SuccessResponse("friend has been removed", 200));
   };
@@ -411,15 +425,14 @@ class UserService {
     const isExist = await this.userRep.findDocumentById(
       blockedUserId as unknown as Types.ObjectId
     );
-    if (!isExist) throw new BadRequestException("this user is not exist");
+    if (!isExist) throw new NotFoundException("this user is not exist");
 
     // Check if target user has already blocked you
     const isBlocked = await this.blockListRepo.findOneDocument({
       userID: blockedUserId,
       theBlockedUser: _id,
     });
-    if (isBlocked)
-      throw new BadRequestException("this user already blocked you");
+    if (isBlocked) throw new ConflictException("this user already blocked you");
 
     // Add block record
     this.blockListRepo.FindAndUpdateOrCreate({
@@ -490,7 +503,7 @@ class UserService {
 
     // Verify block record existed and was removed
     if (!(isBlocked as DeleteResult).deletedCount)
-      throw new BadRequestException("you can't unblock this user");
+      throw new NotFoundException("you can't unblock this user");
 
     res.status(200).json(SuccessResponse("user has been unblocked", 200));
   };
@@ -515,7 +528,7 @@ class UserService {
       },
     });
     if (members.length != (membersExist as string[]).length)
-      throw new BadRequestException("members not found");
+      throw new NotFoundException("members not found");
 
     // Verify all members are friends with creator
     const isFriends = await this.friendShipReop.findDocuments({
@@ -590,7 +603,7 @@ class UserService {
       email: newEmail,
     });
     if (isNewEmailExist)
-      throw new BadRequestException("this email already exist");
+      throw new ConflictException("this email already exist");
 
     // Prevent unnecessary updates
     if (userData?.email == newEmail)
@@ -838,16 +851,127 @@ class UserService {
    * @description Permanently delete user account and all associated data
    */
   deleteAccount = async (req: Request, res: Response) => {
-    // TODO: Implement account deletion with these steps:
-    // delete user account from user model
-    // delete any OTP for the user
-    // delete user's photos from S3
+    // Get user data and tokens
+    const {
+      userData: { _id },
+      accessTokenData,
+      refreshTokenData,
+    } = (req as IRequest).loggedInUser as {
+      userData: IUser;
+      accessTokenData: JwtPayload;
+      refreshTokenData: JwtPayload;
+    };
+
+    await Promise.all([
+      // delete any OTP for the user
+      this.otpRep.deleteManyDocuments({ userId: _id }),
+
+      // delete user's photos from S3
+      this.s3.deleteFolderFromS3(`${_id}`),
+
+      // delete user's comments and replies
+      this.commentRepo.deleteManyDocuments({
+        ownerId: _id,
+      }),
+
+      // delete user's reactions
+      this.reactionRepo.deleteManyDocuments({
+        reactOwner: _id,
+      }),
+
+      // delete user's friendships
+      this.friendShipReop.deleteManyDocuments({
+        $or: [{ senderId: _id }, { receiverId: _id }],
+      }),
+
+      // delete user's block list
+      this.blockListRepo.deleteManyDocuments({
+        $or: [{ theBlockedUser: _id }, { userID: _id }],
+      }),
+
+      // delete the user from any group they joined
+      this.conversionsRepo.updateManyDocument(
+        {
+          type: conversionTypeEnum.GROUP,
+          members: { $in: [_id] },
+        },
+        {
+          $pull: { members: _id },
+        }
+      ),
+    ]);
+
     // delete user's posts
-    // delete user's comments and replies
-    // delete user's reactions
-    // delete user's friendships
-    // delete user's messages
-    // delete the user from any group they joined
+    // --------------------------------------------
+    const posts = await this.postRepo.findDocuments({ ownerId: _id });
+
+    if (posts && (posts as IPost[]).length > 0) {
+      const postIds = (posts as IPost[]).map((post) => post._id);
+
+      // Find comments on ALL posts
+      const comments = await this.commentRepo.findDocuments({
+        refId: { $in: postIds },
+        onModel: commentOnModelEnum.POST,
+      });
+
+      if (comments && (comments as IComment[]).length > 0) {
+        const commentIds = (comments as IComment[]).map((c) => c._id);
+
+        // Find replies to ALL comments
+        const replies = await this.commentRepo.findDocuments({
+          refId: { $in: commentIds },
+          onModel: commentOnModelEnum.COMMENT,
+        });
+
+        const replyIds =
+          replies && (replies as IComment[]).length > 0
+            ? (replies as IComment[]).map((r) => r._id)
+            : [];
+
+        const allIds = [...postIds, ...commentIds, ...replyIds];
+
+        // Delete everything in parallel
+        await Promise.all([
+          // Delete reactions on ALL posts/comments/replies
+          this.reactionRepo.deleteManyDocuments({
+            reactOn: { $in: allIds },
+          }),
+
+          // Delete ALL replies
+          replyIds.length > 0
+            ? this.commentRepo.deleteManyDocuments({
+                _id: { $in: replyIds },
+              })
+            : Promise.resolve(),
+
+          // Delete ALL comments
+          this.commentRepo.deleteManyDocuments({
+            _id: { $in: commentIds },
+          }),
+        ]);
+      } else {
+        // No comments exist - still need to delete reactions on posts
+        await this.reactionRepo.deleteManyDocuments({
+          reactOn: { $in: postIds },
+        });
+      }
+
+      // Delete all the posts
+      await this.postRepo.deleteManyDocuments({ ownerId: _id });
+    }
+    // --------------------------------------------
+
+    // revoke the token
+    this.blackListedRep.createNewDocument({
+      accsessTokenId: accessTokenData?.jti,
+      refreshTokenId: refreshTokenData?.jti,
+      expirationDate: new Date((accessTokenData?.exp as number) * 1000),
+    });
+
+    // delete user account from user model
+    await this.userRep.deleteOneDocument({ _id });
+
+    res.status(200).json(SuccessResponse("account has been deleted"));
   };
 }
 
