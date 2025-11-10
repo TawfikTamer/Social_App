@@ -76,9 +76,3 @@ const server = app.listen(process.env.PORT, () => {
 
 // ------------------------- Initialize Socket.IO -----------------------
 ioInitializer(server);
-
-// to do:
-/**
- * erro handling responses
- * delete user api
- */
