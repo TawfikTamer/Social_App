@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SocialLoginApp — Welcome</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // Early poll to disable Google Identity auto-select / One Tap as soon as the google object is available.
+      (function disableGoogleAutoSelectEarly() {
+        const maxMs = 5000;
+        const intervalMs = 100;
+        let waited = 0;
+        const handle = setInterval(() => {
+          try {
+            const g = window.google;
+            if (g && g.accounts && g.accounts.id) {
+              try {
+                typeof g.accounts.id.disableAutoSelect === "function" &&
+                  g.accounts.id.disableAutoSelect();
+              } catch (e) {}
+              try {
+                typeof g.accounts.id.cancel === "function" &&
+                  g.accounts.id.cancel();
+              } catch (e) {}
+              clearInterval(handle);
+              return;
+            }
+          } catch (e) {}
+          waited += intervalMs;
+          if (waited >= maxMs) clearInterval(handle);
+        }, intervalMs);
+      })();
+    </script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+      :root {
+        --brand1: #6ee7b7;
+        --brand2: #3b82f6;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto,
+          "Helvetica Neue", Arial;
+        background: linear-gradient(
+          135deg,
+          var(--brand2) 0%,
+          #7c3aed 50%,
+          #ef4444 100%
+        );
+        color: #0f172a;
+        -webkit-font-smoothing: antialiased;
+      }
+      .container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+      }
+      .card {
+        background: rgba(255, 255, 255, 0.95);
+        max-width: 980px;
+        width: 100%;
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(2, 6, 23, 0.3);
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        overflow: hidden;
+      }
+      .left {
+        padding: 48px 40px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .logo .mark {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--brand1), var(--brand2));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 18px;
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.25);
+      }
+      h1 {
+        margin: 6px 0 10px;
+        font-size: 28px;
+        line-height: 1.05;
+        color: #0b1220;
+      }
+      p.lead {
+        margin: 0 0 22px;
+        color: #334155;
+        font-size: 15px;
+      }
+      .features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
+      }
+      .feature {
+        background: #f8fafc;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 13px;
+        color: #0b1220;
+        box-shadow: inset 0 -1px 0 rgba(2, 6, 23, 0.03);
+      }
+      .right {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.03),
+          rgba(255, 255, 255, 0)
+        );
+        padding: 36px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+      }
+      .hero-illustration {
+        width: 100%;
+        height: 220px;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.6),
+          rgba(255, 255, 255, 0.15)
+        );
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #07203b;
+        font-weight: 600;
+        font-size: 20px;
+      }
+      .buttons {
+        display: flex;
+        gap: 10px;
+        margin-top: 8px;
+      }
+      .btn {
+        padding: 10px 16px;
+        border-radius: 10px;
+        border: 0;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn.primary {
+        background: linear-gradient(90deg, var(--brand1), var(--brand2));
+        color: white;
+        box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
+      }
+      .btn.ghost {
+        background: transparent;
+        border: 1px solid rgba(11, 18, 32, 0.08);
+        color: #0b1220;
+      }
+      footer {
+        font-size: 12px;
+        color: #475569;
+        margin-top: 8px;
+      }
+      @media (max-width: 900px) {
+        .card {
+          grid-template-columns: 1fr;
+        }
+        .right {
+          order: -1;
+        }
+        .hero-illustration {
+          height: 160px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <app-root>
+      <div class="container" role="main">
+        <div class="card" aria-labelledby="welcome-title">
+          <div class="left">
+            <div class="logo">
+              <div class="mark">SL</div>
+              <div>
+                <div style="font-weight: 700">SocialLogin</div>
+                <div style="font-size: 12px; color: #64748b">
+                  Connect. Share. Grow.
+                </div>
+              </div>
+            </div>
+
+            <h1 id="welcome-title">
+              Welcome to SocialLogin — your social home
+            </h1>
+            <p class="lead">
+              Quickly sign in, discover friends, and share moments. Secure
+              authentication and a friendly community to get you started.
+            </p>
+
+            <div class="features" aria-hidden="true">
+              <div class="feature">OAuth &amp; Social Sign-in</div>
+              <div class="feature">Secure by design</div>
+              <div class="feature">Responsive &amp; fast</div>
+              <div class="feature">Privacy-first</div>
+            </div>
+
+            <div style="margin-top: 24px">
+              <a class="btn primary" href="#" onclick="openApp(event)"
+                >Get Started</a
+              >
+              <a class="btn ghost" href="#" onclick="openAuth(event)"
+                >Sign In</a
+              >
+            </div>
+
+            <footer>
+              Built with care · © <span id="year"></span> SocialLogin
+            </footer>
+          </div>
+
+          <div class="right" aria-hidden="true">
+            <div class="hero-illustration">Welcome — jump in and explore!</div>
+            <p
+              style="
+                font-size: 13px;
+                color: #334155;
+                text-align: center;
+                max-width: 320px;
+              "
+            >
+              Use the app shell to integrate your authentication flows. This
+              placeholder shows where your login widgets or preview cards can
+              live.
+            </p>
+          </div>
+        </div>
+      </div>
+    </app-root>
+
+    <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+      function openApp(e) {
+        e.preventDefault();
+        alert("Get Started clicked — wire this to your router.");
+      }
+      function openAuth(e) {
+        e.preventDefault();
+        alert("Sign In clicked — wire this to your auth flow.");
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-aFq/bzH65dt+w6FI2ooMVUpc+21e0SRygnTpmBvdBgSdnuTN7QbdgL+OapgHtvPp"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="./css/index.css" />
+    <title>ChatApp - Messages</title>
+  </head>
+
+  <body>
+    <!-- Header -->
+    <div class="chat-header">
+      <div class="container-fluid">
+        <div class="header-content">
+          <div class="user-profile-section">
+            <div class="profile-avatar-wrapper">
+              <img
+                id="profileImage"
+                class="profile-avatar"
+                src=""
+                alt="Profile"
+              />
+              <span class="status-indicator online"></span>
+            </div>
+            <div class="user-info">
+              <h1 id="userName" class="user-name"></h1>
+              <span class="user-status">Active now</span>
+            </div>
+          </div>
+          <div class="header-actions">
+            <button class="icon-btn" title="Settings">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M10 12.5C11.3807 12.5 12.5 11.3807 12.5 10C12.5 8.61929 11.3807 7.5 10 7.5C8.61929 7.5 7.5 8.61929 7.5 10C7.5 11.3807 8.61929 12.5 10 12.5Z"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M16.1667 12.5C16.0557 12.7513 16.0226 13.0299 16.0717 13.3006C16.1209 13.5713 16.2501 13.8214 16.4417 14.0167L16.4917 14.0667C16.6361 14.211 16.7506 14.3827 16.8285 14.5714C16.9064 14.7601 16.9462 14.9619 16.9462 15.1658C16.9462 15.3698 16.9064 15.5716 16.8285 15.7603C16.7506 15.949 16.6361 16.1207 16.4917 16.265C16.3473 16.4094 16.1756 16.5239 15.9869 16.6018C15.7982 16.6797 15.5964 16.7195 15.3925 16.7195C15.1886 16.7195 14.9868 16.6797 14.7981 16.6018C14.6094 16.5239 14.4377 16.4094 14.2933 16.265L14.2433 16.215C14.048 16.0234 13.798 15.8942 13.5273 15.845C13.2566 15.7959 12.978 15.829 12.7267 15.94C12.4804 16.0459 12.2715 16.2249 12.1277 16.4538C11.9839 16.6827 11.9119 16.9507 11.9208 17.2217V17.5C11.9208 17.942 11.7453 18.366 11.4327 18.6785C11.1202 18.9911 10.6962 19.1667 10.2542 19.1667C9.81218 19.1667 9.38817 18.9911 9.07561 18.6785C8.76305 18.366 8.58749 17.942 8.58749 17.5V17.4167C8.5716 17.1365 8.46932 16.8682 8.29374 16.6471C8.11817 16.426 7.87806 16.2628 7.60582 16.1792C7.35453 16.0682 7.07595 16.0351 6.80527 16.0842C6.53459 16.1334 6.28451 16.2626 6.08916 16.4542L6.03916 16.5042C5.89477 16.6486 5.72307 16.7631 5.53437 16.841C5.34567 16.9189 5.14387 16.9587 4.93999 16.9587C4.73611 16.9587 4.53431 16.9189 4.34561 16.841C4.15691 16.7631 3.98521 16.6486 3.84082 16.5042C3.69643 16.3598 3.58191 16.1881 3.50402 15.9994C3.42613 15.8107 3.38632 15.6089 3.38632 15.405C3.38632 15.2011 3.42613 14.9993 3.50402 14.8106C3.58191 14.6219 3.69643 14.4502 3.84082 14.3058L3.89082 14.2558C4.08243 14.0605 4.21163 13.8104 4.26077 13.5397C4.30991 13.269 4.27676 12.9905 4.17082 12.7392C4.0649 12.4929 3.88594 12.284 3.65703 12.1402C3.42812 11.9964 3.16012 11.9244 2.88916 11.9333H2.60582C2.16381 11.9333 1.7398 11.7578 1.42724 11.4452C1.11468 11.1327 0.939119 10.7087 0.939119 10.2667C0.939119 9.82464 1.11468 9.40063 1.42724 9.08807C1.7398 8.77551 2.16381 8.59995 2.60582 8.59995H2.68916C2.96935 8.58406 3.23762 8.48178 3.4587 8.30621C3.67979 8.13063 3.84302 7.89052 3.92666 7.61828C4.03259 7.36699 4.06574 7.08841 4.0166 6.81773C3.96746 6.54705 3.83826 6.29697 3.64666 6.10162L3.59666 6.05162C3.45227 5.90723 3.33774 5.73553 3.25985 5.54683C3.18196 5.35813 3.14216 5.15633 3.14216 4.95245C3.14216 4.74857 3.18196 4.54677 3.25985 4.35807C3.33774 4.16937 3.45227 3.99767 3.59666 3.85328C3.74105 3.70889 3.91275 3.59437 4.10145 3.51648C4.29015 3.43859 4.49195 3.39878 4.69583 3.39878C4.89971 3.39878 5.10151 3.43859 5.29021 3.51648C5.47891 3.59437 5.65061 3.70889 5.795 3.85328L5.845 3.90328C6.04035 4.09489 6.29043 4.22409 6.56111 4.27323C6.83179 4.32237 7.11037 4.28922 7.36166 4.18328H7.43916C7.68548 4.07736 7.89436 3.8984 8.03816 3.66949C8.18196 3.44058 8.25397 3.17258 8.24499 2.90162V2.61828C8.24499 2.17627 8.42055 1.75226 8.73311 1.4397C9.04567 1.12714 9.46968 0.951584 9.91169 0.951584C10.3537 0.951584 10.7777 1.12714 11.0903 1.4397C11.4028 1.75226 11.5784 2.17627 11.5784 2.61828V2.70162C11.5873 2.97258 11.6594 3.24058 11.8032 3.46949C11.947 3.6984 12.1558 3.87736 12.4022 3.98328C12.6534 4.08922 12.932 4.12237 13.2027 4.07323C13.4734 4.02409 13.7235 3.89489 13.9188 3.70328L13.9688 3.65328C14.1132 3.50889 14.2849 3.39437 14.4736 3.31648C14.6623 3.23859 14.8641 3.19878 15.068 3.19878C15.2719 3.19878 15.4737 3.23859 15.6624 3.31648C15.8511 3.39437 16.0228 3.50889 16.1672 3.65328C16.3116 3.79767 16.4261 3.96937 16.504 4.15807C16.5819 4.34677 16.6217 4.54857 16.6217 4.75245C16.6217 4.95633 16.5819 5.15813 16.504 5.34683C16.4261 5.53553 16.3116 5.70723 16.1672 5.85162L16.1172 5.90162C15.9256 6.09697 15.7964 6.34705 15.7473 6.61773C15.6981 6.88841 15.731 7.16699 15.8369 7.41828V7.49578C15.9428 7.7421 16.1218 7.95098 16.3507 8.09478C16.5796 8.23858 16.8476 8.31059 17.1186 8.30162H17.4019C17.8439 8.30162 18.2679 8.47718 18.5805 8.78974C18.893 9.1023 19.0686 9.52631 19.0686 9.96832C19.0686 10.4103 18.893 10.8343 18.5805 11.1469C18.2679 11.4595 17.8439 11.635 17.4019 11.635H17.3186C17.0476 11.644 16.7796 11.716 16.5507 11.8598C16.3218 12.0036 16.1428 12.2125 16.0369 12.4588V12.5Z"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <audio id="notifyTone" src="./sounds/notify.wav" controls></audio>
+
+    <div class="chat-main-container">
+      <div class="container-fluid">
+        <div class="row g-0">
+          <!-- Chat Window -->
+          <div class="col-lg-8 col-md-7">
+            <div class="chat-window">
+              <div class="chat-window-header">
+                <h2 class="chat-title">Messages</h2>
+              </div>
+              <div class="chat-messages-container">
+                <div id="messageList" class="message-list"></div>
+              </div>
+              <!-- Typing indicator -->
+              <div
+                id="typingIndicator"
+                style="
+                  display: none;
+                  font-size: 0.9em;
+                  color: gray;
+                  padding-left: 40px;
+                "
+              >
+                Typing...
+              </div>
+              <div class="message-input-container">
+                <div class="message-input-wrapper">
+                  <input
+                    id="messageBody"
+                    class="message-input"
+                    type="text"
+                    placeholder="Type a message..."
+                  />
+                  <button id="sendMessage" class="send-btn">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M18.3333 1.66666L9.16666 10.8333M18.3333 1.66666L12.5 18.3333L9.16666 10.8333M18.3333 1.66666L1.66666 7.49999L9.16666 10.8333"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <div class="col-lg-4 col-md-5">
+            <div class="chat-sidebar">
+              <!-- Friends Section -->
+              <div class="sidebar-section">
+                <div class="sidebar-header">
+                  <h3 class="sidebar-title">
+                    <svg
+                      class="sidebar-icon"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M14.1667 17.5V15.8333C14.1667 14.9493 13.8155 14.1014 13.1904 13.4763C12.5652 12.8512 11.7174 12.5 10.8333 12.5H4.16667C3.28261 12.5 2.43476 12.8512 1.80964 13.4763C1.18452 14.1014 0.833336 14.9493 0.833336 15.8333V17.5M17.5 17.5V15.8333C17.4997 15.0948 17.2673 14.3773 16.8388 13.7936C16.4103 13.2099 15.8087 12.793 15.125 12.6083M12.2917 2.60833C12.9769 2.79192 13.5801 3.20892 14.0095 3.79359C14.4389 4.37827 14.6714 5.09736 14.6714 5.8375C14.6714 6.57764 14.4389 7.29673 14.0095 7.88141C13.5801 8.46608 12.9769 8.88308 12.2917 9.06667M10.8333 5.83333C10.8333 7.67428 9.34095 9.16667 7.5 9.16667C5.65905 9.16667 4.16667 7.67428 4.16667 5.83333C4.16667 3.99238 5.65905 2.5 7.5 2.5C9.34095 2.5 10.8333 3.99238 10.8333 5.83333Z"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                    Friends
+                  </h3>
+                </div>
+                <div id="chatUsers" class="contacts-list"></div>
+              </div>
+
+              <!-- Groups Section -->
+              <div class="sidebar-section">
+                <div class="sidebar-header">
+                  <h3 class="sidebar-title">
+                    <svg
+                      class="sidebar-icon"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M14.1667 17.5V15.8333C14.1667 14.9493 13.8155 14.1014 13.1904 13.4763C12.5652 12.8512 11.7174 12.5 10.8333 12.5H4.16667C3.28261 12.5 2.43476 12.8512 1.80964 13.4763C1.18452 14.1014 0.833336 14.9493 0.833336 15.8333V17.5M17.5 17.5V15.8333C17.4997 15.0948 17.2673 14.3773 16.8388 13.7936C16.4103 13.2099 15.8087 12.793 15.125 12.6083M12.2917 2.60833C12.9769 2.79192 13.5801 3.20892 14.0095 3.79359C14.4389 4.37827 14.6714 5.09736 14.6714 5.8375C14.6714 6.57764 14.4389 7.29673 14.0095 7.88141C13.5801 8.46608 12.9769 8.88308 12.2917 9.06667M10.8333 5.83333C10.8333 7.67428 9.34095 9.16667 7.5 9.16667C5.65905 9.16667 4.16667 7.67428 4.16667 5.83333C4.16667 3.99238 5.65905 2.5 7.5 2.5C9.34095 2.5 10.8333 3.99238 10.8333 5.83333Z"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                    Groups
+                  </h3>
+                </div>
+                <div id="chatGroups" class="contacts-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="./node_modules/jwt-decode/build/jwt-decode.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
+      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="./node_modules/socket.io/client-dist/socket.io.min.js"></script>
+    <script src="./js/chat.js"></script>
+  </body>
+</html>

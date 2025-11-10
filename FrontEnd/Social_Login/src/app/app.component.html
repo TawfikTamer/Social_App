@@ -1,0 +1,16 @@
+<div *ngIf="!loggedIn">
+  <asl-google-signin-button></asl-google-signin-button>
+</div>
+
+<div *ngIf="loggedIn" class="profile-card">
+  <img
+    *ngIf="user?.photoUrl"
+    [src]="user.photoUrl"
+    alt="{{ user?.name }}"
+    width="80"
+    height="80"
+  />
+  <div>{{ user?.name }}</div>
+  <div>{{ user?.email }}</div>
+  <button (click)="signOut()">Sign out</button>
+</div>
