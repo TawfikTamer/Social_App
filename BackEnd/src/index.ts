@@ -11,10 +11,11 @@ import {
 } from "./Modules/controllers.index";
 import { FailedResponse, HttpException } from "./Utils";
 import { ioInitializer } from "./Gatewayes/socketIo.gatewaye";
+import { setupSwagger } from "./Config/swagger.config";
 
 // ------------------------- Main application entry point -------------------------
 const app = express();
-
+setupSwagger(app);
 // ------------------------- Initialize DB connection -------------------------
 dbConnection();
 
